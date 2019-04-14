@@ -144,28 +144,36 @@ update msg model =
             ( { model | spiceModal = False }, Cmd.none )
 
 
+joinClasses : List String -> Html.Attribute msg
+joinClasses =
+    String.join " "
+        >> Attributes.class
+
+
 view : Model -> Html.Html Msg
 view { board, spices, spiceModal } =
     let
         spiceModalView =
             Html.div
-                [ Attributes.style "position" "fixed"
-                , Attributes.style "top" "0"
-                , Attributes.style "bottom" "0"
-                , Attributes.style "right" "0"
-                , Attributes.style "left" "0"
-                , Attributes.style "background-color" "rgba(255, 255, 255, 0.7)"
-                , Attributes.style "display" "flex"
-                , Attributes.style "justify-content" "center"
-                , Attributes.style "align-items" "center"
+                [ joinClasses
+                    [ "fixed"
+                    , "pin"
+                    , "bg-white55"
+                    , "flex"
+                    , "justify-center"
+                    , "items-center"
+                    ]
                 , Events.onClick CloseModal
                 ]
                 [ Html.div
-                    [ Attributes.style "background-color" "#fff"
-                    , Attributes.style "max-width" "400px"
-                    , Attributes.style "padding" "24px"
-                    , Attributes.style "border-radius" "8px"
-                    , Attributes.style "box-shadow" "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+                    [ joinClasses
+                        [ "bg-white"
+                        , "max-w-content"
+                        , "w-full"
+                        , "shadow-a"
+                        , "p-4"
+                        , "rounded"
+                        ]
                     ]
                     (spices
                         |> List.map
@@ -179,48 +187,52 @@ view { board, spices, spiceModal } =
                 ]
     in
     Html.div
-        [ Attributes.style "max-width" "400px"
-        , Attributes.style "width" "100%"
-        , Attributes.style "display" "flex"
-        , Attributes.style "flex-direction" "column"
-        , Attributes.style "align-items" "center"
-        , Attributes.style "margin" "0 auto"
-        ]
-        [ Html.h1 [] [ Html.text "スパイスブレンディングメソッド" ]
-        , Html.div []
-            (board
-                |> List.map
-                    (\line ->
-                        Html.div [ Attributes.style "display" "flex" ] <|
-                            (line
-                                |> List.map
-                                    (\{ status, point } ->
-                                        Html.div
-                                            [ Attributes.style "width" "50px"
-                                            , Attributes.style "height" "50px"
-                                            , case status of
-                                                Selected ->
-                                                    Attributes.style "border" "1px solid orange"
+        [ joinClasses [ "flex", "justify-center" ] ]
+        [ Html.div
+            [ joinClasses
+                [ "max-w-content"
+                , "w-full"
+                , "flex"
+                , "flex-col"
+                , "justify-center"
+                , "p-3"
+                ]
+            ]
+            [ Html.div [ joinClasses [ "text-size-h5" ] ] [ Html.text "スパイスブレンディングメソッド" ]
+            , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
+                (board
+                    |> List.map
+                        (\line ->
+                            Html.div [ Attributes.style "display" "flex" ] <|
+                                (line
+                                    |> List.map
+                                        (\{ status, point } ->
+                                            Html.div
+                                                [ joinClasses [ "w-box", "h-box" ]
+                                                , case status of
+                                                    Selected ->
+                                                        Attributes.style "border" "1px solid orange"
 
-                                                NotSelected ->
-                                                    Attributes.style "border" "1px solid #444"
-                                            , Events.onMouseDown <| OnMouseDown point
-                                            , Events.onMouseEnter <| OnMouseEnter point
-                                            , Events.onMouseUp <| OnMouseUp point
-                                            ]
-                                            -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
-                                            -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
-                                            -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)
-                                            []
-                                    )
-                            )
-                    )
-            )
-        , if spiceModal then
-            spiceModalView
+                                                    NotSelected ->
+                                                        Attributes.style "border" "1px solid #444"
+                                                , Events.onMouseDown <| OnMouseDown point
+                                                , Events.onMouseEnter <| OnMouseEnter point
+                                                , Events.onMouseUp <| OnMouseUp point
+                                                ]
+                                                -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
+                                                -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
+                                                -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)
+                                                []
+                                        )
+                                )
+                        )
+                )
+            , if spiceModal then
+                spiceModalView
 
-          else
-            Html.text ""
+              else
+                Html.text ""
+            ]
         ]
 
 

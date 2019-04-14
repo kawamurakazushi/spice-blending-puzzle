@@ -1,0 +1,52 @@
+@tailwind preflight;
+
+@import url("https://fonts.googleapis.com/css?family=M+PLUS+1p:300,500&amp");
+
+body {
+  @apply text-black90 font-regular;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+* {
+  @apply font-sans;
+}
+
+.text-size-h1 {
+  @apply text-h1 leading-h1;
+}
+
+.text-size-h2 {
+  @apply text-h2 leading-h2;
+}
+
+.text-size-h3 {
+  @apply text-h3 leading-h3;
+}
+
+.text-size-h4 {
+  @apply text-h4 leading-h4;
+}
+
+.text-size-h5 {
+  @apply text-h5 leading-h5;
+}
+
+.text-size-h6 {
+  @apply text-h6 leading-h6;
+}
+
+.text-size-body {
+  @apply text-body leading-body;
+}
+
+.text-size-small {
+  @apply text-small leading-small;
+}
+
+.text-size-caption {
+  @apply text-caption leading-caption;
+}
+
+@tailwind utilities;
