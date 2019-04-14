@@ -136,14 +136,14 @@ module.exports = {
     "5/6": "83.33333%",
     full: "100%",
     screen: "100vw",
-    box: "50px"
+    box: "80px"
   },
   height: {
     auto: "auto",
     px: "1px",
     full: "100%",
     screen: "100vh",
-    box: "50px"
+    box: "80px"
   },
   maxWidth: {
     content: "400px"

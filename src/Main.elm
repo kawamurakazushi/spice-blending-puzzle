@@ -16,9 +16,14 @@ type alias Point =
     }
 
 
+type alias Spice =
+    { id : String, name : String, color : String }
+
+
 type Status
     = Selected
-    | NotSelected
+    | Blank
+    | SpiceSelected Spice
 
 
 type alias Cell =
@@ -46,7 +51,7 @@ init key =
                     (\y ->
                         List.range 1 4
                             |> List.map
-                                (\x -> Cell (Point x y) NotSelected)
+                                (\x -> Cell (Point x y) Blank)
                     )
       , spices = []
       , spiceModal = False
@@ -65,6 +70,7 @@ type Msg
     | OnMouseEnter Point
     | FetchedValues (Result Http.Error (List (List String)))
     | CloseModal
+    | SelectSpice Spice
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -86,11 +92,16 @@ update msg model =
                         |> List.map
                             (List.map
                                 (\cell ->
-                                    if cell.point == point then
-                                        { cell | status = Selected }
+                                    case cell.status of
+                                        SpiceSelected _ ->
+                                            cell
 
-                                    else
-                                        { cell | status = NotSelected }
+                                        _ ->
+                                            if cell.point == point then
+                                                { cell | status = Selected }
+
+                                            else
+                                                { cell | status = Blank }
                                 )
                             )
                 , startAt = Just point
@@ -120,11 +131,16 @@ update msg model =
                             |> List.map
                                 (List.map
                                     (\cell ->
-                                        if active cell.point then
-                                            { cell | status = Selected }
+                                        case cell.status of
+                                            SpiceSelected _ ->
+                                                cell
 
-                                        else
-                                            { cell | status = NotSelected }
+                                            _ ->
+                                                if active cell.point then
+                                                    { cell | status = Selected }
+
+                                                else
+                                                    { cell | status = Blank }
                                     )
                                 )
 
@@ -142,6 +158,25 @@ update msg model =
 
         CloseModal ->
             ( { model | spiceModal = False }, Cmd.none )
+
+        SelectSpice spice ->
+            ( { model
+                | board =
+                    model.board
+                        |> List.map
+                            (List.map
+                                (\cell ->
+                                    if cell.status == Selected then
+                                        { cell | status = SpiceSelected spice }
+
+                                    else
+                                        cell
+                                )
+                            )
+                , spiceModal = False
+              }
+            , Cmd.none
+            )
 
 
 joinClasses : List String -> Html.Attribute msg
@@ -163,7 +198,6 @@ view { board, spices, spiceModal } =
                     , "justify-center"
                     , "items-center"
                     ]
-                , Events.onClick CloseModal
                 ]
                 [ Html.div
                     [ joinClasses
@@ -171,19 +205,70 @@ view { board, spices, spiceModal } =
                         , "max-w-content"
                         , "w-full"
                         , "shadow-a"
-                        , "p-4"
+                        , "p-3"
                         , "rounded"
                         ]
                     ]
-                    (spices
-                        |> List.map
-                            (List.Extra.getAt 0
-                                >> Maybe.withDefault ""
-                                >> Html.text
-                                >> List.singleton
-                                >> Html.div []
-                            )
-                    )
+                  <|
+                    [ Html.div
+                        [ joinClasses
+                            [ "flex"
+                            , "flex-row-reverse"
+                            , "justify-between"
+                            , "items-center"
+                            ]
+                        ]
+                        [ Html.div
+                            [ joinClasses
+                                [ "cursor-pointer"
+                                , "text-black55"
+                                , "text-size-h5"
+                                , "hover:text-black10"
+                                , "p-2"
+                                ]
+                            , Events.onClick CloseModal
+                            ]
+                            [ Html.text "×" ]
+                        , Html.div
+                            [ joinClasses
+                                [ "text-black55"
+                                , "text-size-caption"
+                                ]
+                            ]
+                            [ Html.text "スパイスを選択してください" ]
+                        ]
+                    ]
+                        ++ (spices
+                                |> List.map
+                                    (\s ->
+                                        let
+                                            id =
+                                                s
+                                                    |> List.Extra.getAt 0
+                                                    |> Maybe.withDefault ""
+
+                                            name =
+                                                s
+                                                    |> List.Extra.getAt 1
+                                                    |> Maybe.withDefault ""
+
+                                            color =
+                                                s
+                                                    |> List.Extra.getAt 2
+                                                    |> Maybe.withDefault ""
+                                        in
+                                        Html.div
+                                            [ joinClasses
+                                                [ "my-2"
+                                                , "text-size-body"
+                                                , "hover:text-black55"
+                                                , "cursor-pointer"
+                                                ]
+                                            , Events.onClick <| SelectSpice <| Spice id name color
+                                            ]
+                                            [ Html.text name ]
+                                    )
+                           )
                 ]
     in
     Html.div
@@ -208,13 +293,16 @@ view { board, spices, spiceModal } =
                                     |> List.map
                                         (\{ status, point } ->
                                             Html.div
-                                                [ joinClasses [ "w-box", "h-box" ]
+                                                [ joinClasses [ "w-box", "h-box", "text-size-caption", "flex", "justify-center", "items-center" ]
                                                 , case status of
                                                     Selected ->
                                                         Attributes.style "border" "1px solid orange"
 
-                                                    NotSelected ->
+                                                    Blank ->
                                                         Attributes.style "border" "1px solid #444"
+
+                                                    SpiceSelected spice ->
+                                                        Attributes.style "background-color" spice.color
                                                 , Events.onMouseDown <| OnMouseDown point
                                                 , Events.onMouseEnter <| OnMouseEnter point
                                                 , Events.onMouseUp <| OnMouseUp point
@@ -222,7 +310,13 @@ view { board, spices, spiceModal } =
                                                 -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
                                                 -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
                                                 -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)
-                                                []
+                                                [ case status of
+                                                    SpiceSelected { name } ->
+                                                        Html.text name
+
+                                                    _ ->
+                                                        Html.text ""
+                                                ]
                                         )
                                 )
                         )
