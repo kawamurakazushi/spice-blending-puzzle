@@ -12,6 +12,7 @@
   "scripts": {
     "start": "parcel src/index.html",
     "css": "tailwind build src/tailwind.css -c src/tailwind.js -o src/index.css",
-    "postinstall": "yarn css"
+    "postinstall": "yarn css",
+    "build": "yarn css && yarn parcel build src/index.html"
   }
 }
