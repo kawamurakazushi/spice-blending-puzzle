@@ -1,4 +1,4 @@
-module Main exposing (Msg, init, update)
+module Main exposing (Board, Cell, Model, Msg(..), Point, Spice, Status(..), fill, range, set, update, view)
 
 import Browser
 import Html
@@ -32,10 +32,14 @@ type alias Cell =
     }
 
 
+type alias Board =
+    List (List Cell)
+
+
 type alias Model =
     { startAt : Maybe Point
     , dragging : Bool
-    , board : List (List Cell)
+    , board : Board
     , spices : List (List String)
     , spiceModal : Bool
     }
@@ -64,6 +68,106 @@ init key =
     )
 
 
+set : Point -> Status -> Board -> Board
+set point status =
+    List.map
+        (List.map
+            (\cell ->
+                if cell.point == point then
+                    { cell | status = status }
+
+                else
+                    cell
+            )
+        )
+
+
+get : Point -> Board -> Maybe Status
+get point board =
+    board
+        |> List.foldr (++) []
+        |> List.foldl
+            (\cell status ->
+                if cell.point == point then
+                    Just cell.status
+
+                else
+                    status
+            )
+            Nothing
+
+
+range : Int -> Int -> List Int
+range a b =
+    if a > b then
+        List.range b a
+
+    else
+        List.range a b
+
+
+removeSelected : Board -> Board
+removeSelected =
+    List.map
+        (List.map
+            (\cell ->
+                if cell.status == Selected then
+                    { cell | status = Blank }
+
+                else
+                    cell
+            )
+        )
+
+
+fill : Point -> Point -> Board -> Board
+fill startPoint endPoint board =
+    let
+        diff end start =
+            let
+                d =
+                    end - start
+            in
+            if d == 2 then
+                if end == 4 then
+                    1
+
+                else
+                    3
+
+            else if d == -2 then
+                if end == 1 then
+                    -1
+
+                else
+                    -3
+
+            else
+                d
+
+        xDiff =
+            diff endPoint.x startPoint.x
+
+        yDiff =
+            diff endPoint.y startPoint.y
+
+        points : List Point
+        points =
+            range 0 xDiff
+                |> List.map
+                    (\x ->
+                        range 0 yDiff
+                            |> List.map (\y -> Point (startPoint.x + x) (startPoint.y + y))
+                    )
+                |> List.foldr (++) []
+
+        _ =
+            Debug.log "points" points
+    in
+    points
+        |> List.foldl (\p b -> b |> set p Selected) (removeSelected board)
+
+
 type Msg
     = OnMouseDown Point
     | OnMouseUp Point
@@ -75,35 +179,11 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        between : Int -> Int -> Int -> Bool
-        between a b value =
-            if a >= b then
-                value <= a && value >= b
-
-            else
-                value <= b && value >= a
-    in
     case msg of
         OnMouseDown point ->
             ( { model
                 | board =
-                    model.board
-                        |> List.map
-                            (List.map
-                                (\cell ->
-                                    case cell.status of
-                                        SpiceSelected _ ->
-                                            cell
-
-                                        _ ->
-                                            if cell.point == point then
-                                                { cell | status = Selected }
-
-                                            else
-                                                { cell | status = Blank }
-                                )
-                            )
+                    model.board |> set point Selected
                 , startAt = Just point
                 , dragging = True
               }
@@ -114,35 +194,20 @@ update msg model =
             ( { model | dragging = False, spiceModal = True }, Cmd.none )
 
         OnMouseEnter point ->
-            let
-                active : Point -> Bool
-                active p =
-                    case ( model.startAt, point ) of
-                        ( Just startAt, endAt ) ->
-                            between startAt.x endAt.x p.x && between startAt.y endAt.y p.y
-
-                        _ ->
-                            False
-            in
             ( { model
                 | board =
                     if model.dragging then
-                        model.board
-                            |> List.map
-                                (List.map
-                                    (\cell ->
-                                        case cell.status of
-                                            SpiceSelected _ ->
-                                                cell
+                        case get point model.board of
+                            Just (SpiceSelected _) ->
+                                model.board
 
-                                            _ ->
-                                                if active cell.point then
-                                                    { cell | status = Selected }
+                            _ ->
+                                case model.startAt of
+                                    Just startAt ->
+                                        model.board |> fill startAt point
 
-                                                else
-                                                    { cell | status = Blank }
-                                    )
-                                )
+                                    Nothing ->
+                                        model.board
 
                     else
                         model.board
@@ -288,12 +353,12 @@ view { board, spices, spiceModal } =
                 (board
                     |> List.map
                         (\line ->
-                            Html.div [ Attributes.style "display" "flex" ] <|
+                            Html.div [ joinClasses [ "flex", "w-full" ] ] <|
                                 (line
                                     |> List.map
                                         (\{ status, point } ->
                                             Html.div
-                                                [ joinClasses [ "w-box", "h-box", "text-size-caption", "flex", "justify-center", "items-center" ]
+                                                [ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center" ]
                                                 , case status of
                                                     Selected ->
                                                         Attributes.style "border" "1px solid orange"

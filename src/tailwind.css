@@ -49,4 +49,14 @@ body {
   @apply text-caption leading-caption;
 }
 
+.box {
+  flex: 1;
+}
+
+.box:after {
+  content: "";
+  display: block;
+  padding-bottom: 100%;
+}
+
 @tailwind utilities;
