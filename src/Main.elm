@@ -120,6 +120,36 @@ removeSelected =
         )
 
 
+spiceInside : Point -> Point -> Board -> Bool
+spiceInside startPoint endPoint =
+    let
+        between : Int -> Int -> Int -> Bool
+        between a b value =
+            if a >= value && value >= b then
+                True
+
+            else if b >= value && value >= a then
+                True
+
+            else
+                False
+    in
+    List.foldr (++) []
+        >> List.foldl
+            (\cell inside ->
+                inside
+                    || (case cell.status of
+                            SpiceSelected _ ->
+                                between startPoint.x endPoint.x cell.point.x
+                                    && between startPoint.y endPoint.y cell.point.y
+
+                            _ ->
+                                inside
+                       )
+            )
+            False
+
+
 fill : Point -> Point -> Board -> Board
 fill startPoint endPoint board =
     let
@@ -160,9 +190,6 @@ fill startPoint endPoint board =
                             |> List.map (\y -> Point (startPoint.x + x) (startPoint.y + y))
                     )
                 |> List.foldr (++) []
-
-        _ =
-            Debug.log "points" points
     in
     points
         |> List.foldl (\p b -> b |> set p Selected) (removeSelected board)
@@ -181,17 +208,26 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         OnMouseDown point ->
-            ( { model
-                | board =
-                    model.board |> set point Selected
-                , startAt = Just point
-                , dragging = True
-              }
-            , Cmd.none
-            )
+            case get point model.board of
+                Just (SpiceSelected _) ->
+                    ( model, Cmd.none )
+
+                _ ->
+                    ( { model
+                        | board =
+                            model.board |> set point Selected
+                        , startAt = Just point
+                        , dragging = True
+                      }
+                    , Cmd.none
+                    )
 
         OnMouseUp point ->
-            ( { model | dragging = False, spiceModal = True }, Cmd.none )
+            if model.dragging then
+                ( { model | dragging = False, spiceModal = True }, Cmd.none )
+
+            else
+                ( { model | dragging = False }, Cmd.none )
 
         OnMouseEnter point ->
             ( { model
@@ -204,7 +240,11 @@ update msg model =
                             _ ->
                                 case model.startAt of
                                     Just startAt ->
-                                        model.board |> fill startAt point
+                                        if not <| spiceInside startAt point model.board then
+                                            model.board |> fill startAt point
+
+                                        else
+                                            model.board
 
                                     Nothing ->
                                         model.board
@@ -348,7 +388,7 @@ view { board, spices, spiceModal } =
                 , "p-3"
                 ]
             ]
-            [ Html.div [ joinClasses [ "text-size-h5" ] ] [ Html.text "スパイスブレンディングメソッド" ]
+            [ Html.div [ joinClasses [ "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Method" ]
             , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
                 (board
                     |> List.map
@@ -358,20 +398,22 @@ view { board, spices, spiceModal } =
                                     |> List.map
                                         (\{ status, point } ->
                                             Html.div
-                                                [ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center" ]
-                                                , case status of
-                                                    Selected ->
-                                                        Attributes.style "border" "1px solid orange"
+                                                ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
+                                                 , Events.onMouseDown <| OnMouseDown point
+                                                 , Events.onMouseEnter <| OnMouseEnter point
+                                                 , Events.onMouseUp <| OnMouseUp point
+                                                 ]
+                                                    ++ (case status of
+                                                            Selected ->
+                                                                [ Attributes.style "background-color" "orange" ]
 
-                                                    Blank ->
-                                                        Attributes.style "border" "1px solid #444"
+                                                            Blank ->
+                                                                [ Attributes.style "background-color" "#fbfadfa3" ]
 
-                                                    SpiceSelected spice ->
-                                                        Attributes.style "background-color" spice.color
-                                                , Events.onMouseDown <| OnMouseDown point
-                                                , Events.onMouseEnter <| OnMouseEnter point
-                                                , Events.onMouseUp <| OnMouseUp point
-                                                ]
+                                                            SpiceSelected spice ->
+                                                                [ Attributes.style "background-color" spice.color ]
+                                                       )
+                                                )
                                                 -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
                                                 -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
                                                 -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)

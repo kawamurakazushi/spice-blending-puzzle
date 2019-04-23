@@ -60,16 +60,15 @@ module.exports = {
   colors: colors,
   spacings: spacings,
   fonts: {
-    sans: [
-      "-apple-system",
-      "M PLUS 1p",
+    sans: ["'M PLUS 1p'", "system-ui", "Ubuntu", "sans-serif", "Hiragino Sans"],
+    secondary: [
+      "'Patrick Hand SC'",
+      "'M PLUS 1p'",
       "system-ui",
       "Ubuntu",
       "sans-serif",
-      "Hiragino Sans"
-    ],
-    serif: ["serif"],
-    mono: ["monospace"]
+      "'Hiragino Sans'"
+    ]
   },
   textSizes: {
     h1: "76px",
