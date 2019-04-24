@@ -1,4 +1,4 @@
-module Main exposing (Board, Cell, Model, Msg(..), Point, Spice, Status(..), fill, range, set, update, view)
+module Main exposing (Board, Cell, Model, Msg(..), Point, Spice, Status(..), set, update, view)
 
 import Browser
 import Html
@@ -17,7 +17,14 @@ type alias Point =
 
 
 type alias Spice =
-    { id : String, name : String, color : String }
+    { id : String
+    , name : String
+    , color : String
+    , oneCell : Bool
+    , twoCell : Bool
+    , fourCell : Bool
+    , eightCell : Bool
+    }
 
 
 type Status
@@ -37,19 +44,16 @@ type alias Board =
 
 
 type alias Model =
-    { startAt : Maybe Point
-    , dragging : Bool
-    , board : Board
-    , spices : List (List String)
+    { board : Board
+    , spices : List Spice
     , spiceModal : Bool
+    , selectedSpice : Maybe Spice
     }
 
 
 init : String -> ( Model, Cmd Msg )
 init key =
-    ( { startAt = Nothing
-      , dragging = False
-      , board =
+    ( { board =
             List.range 1 4
                 |> List.map
                     (\y ->
@@ -59,6 +63,7 @@ init key =
                     )
       , spices = []
       , spiceModal = False
+      , selectedSpice = Nothing
       }
     , Spreadsheet.getValues
         FetchedValues
@@ -95,15 +100,6 @@ get point board =
                     status
             )
             Nothing
-
-
-range : Int -> Int -> List Int
-range a b =
-    if a > b then
-        List.range b a
-
-    else
-        List.range a b
 
 
 removeSelected : Board -> Board
@@ -150,36 +146,22 @@ spiceInside startPoint endPoint =
             False
 
 
-fill : Point -> Point -> Board -> Board
-fill startPoint endPoint board =
+pointsFromDiagnal : Point -> Point -> List Point
+pointsFromDiagnal startPoint endPoint =
     let
-        diff end start =
-            let
-                d =
-                    end - start
-            in
-            if d == 2 then
-                if end == 4 then
-                    1
-
-                else
-                    3
-
-            else if d == -2 then
-                if end == 1 then
-                    -1
-
-                else
-                    -3
+        range : Int -> Int -> List Int
+        range a b =
+            if a > b then
+                List.range b a
 
             else
-                d
+                List.range a b
 
         xDiff =
-            diff endPoint.x startPoint.x
+            endPoint.x - startPoint.x
 
         yDiff =
-            diff endPoint.y startPoint.y
+            endPoint.y - startPoint.y
 
         points : List Point
         points =
@@ -192,71 +174,115 @@ fill startPoint endPoint board =
                 |> List.foldr (++) []
     in
     points
-        |> List.foldl (\p b -> b |> set p Selected) (removeSelected board)
+
+
+type Area
+    = One
+    | Two
+    | Four
+    | Eight
+
+
+firstSelected : Area -> Board -> Board
+firstSelected area board =
+    let
+        selectablePoints =
+            board
+                |> List.foldr (++) []
+                |> List.foldl
+                    (\cell points ->
+                        let
+                            p =
+                                cell.point
+
+                            pointArea =
+                                case area of
+                                    One ->
+                                        p
+
+                                    Two ->
+                                        { p | x = p.x + 1 }
+
+                                    Four ->
+                                        { p | x = p.x + 1, y = p.y + 1 }
+
+                                    Eight ->
+                                        { p | x = p.x + 1, y = p.y + 3 }
+                        in
+                        if List.isEmpty points && (not <| spiceInside cell.point pointArea board) then
+                            pointsFromDiagnal cell.point pointArea
+
+                        else
+                            points
+                    )
+                    []
+    in
+    selectablePoints
+        |> List.foldr (\p b -> b |> set p Selected) board
 
 
 type Msg
-    = OnMouseDown Point
-    | OnMouseUp Point
-    | OnMouseEnter Point
-    | FetchedValues (Result Http.Error (List (List String)))
+    = FetchedValues (Result Http.Error (List (List String)))
     | CloseModal
     | SelectSpice Spice
+    | AddSpice
+    | ConfirmSpice
+    | ChangeArea Area
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OnMouseDown point ->
-            case get point model.board of
-                Just (SpiceSelected _) ->
-                    ( model, Cmd.none )
-
-                _ ->
-                    ( { model
-                        | board =
-                            model.board |> set point Selected
-                        , startAt = Just point
-                        , dragging = True
-                      }
-                    , Cmd.none
-                    )
-
-        OnMouseUp point ->
-            if model.dragging then
-                ( { model | dragging = False, spiceModal = True }, Cmd.none )
-
-            else
-                ( { model | dragging = False }, Cmd.none )
-
-        OnMouseEnter point ->
-            ( { model
-                | board =
-                    if model.dragging then
-                        case get point model.board of
-                            Just (SpiceSelected _) ->
-                                model.board
-
-                            _ ->
-                                case model.startAt of
-                                    Just startAt ->
-                                        if not <| spiceInside startAt point model.board then
-                                            model.board |> fill startAt point
+        FetchedValues (Ok values) ->
+            let
+                spices =
+                    values
+                        |> List.map
+                            (\spice ->
+                                let
+                                    boolFromString b =
+                                        if b == "1" then
+                                            True
 
                                         else
-                                            model.board
-
-                                    Nothing ->
-                                        model.board
-
-                    else
-                        model.board
-              }
-            , Cmd.none
-            )
-
-        FetchedValues (Ok values) ->
-            ( { model | spices = values }, Cmd.none )
+                                            False
+                                in
+                                { id =
+                                    spice
+                                        |> List.Extra.getAt 0
+                                        |> Maybe.withDefault ""
+                                , name =
+                                    spice
+                                        |> List.Extra.getAt 1
+                                        |> Maybe.withDefault ""
+                                , color =
+                                    spice
+                                        |> List.Extra.getAt 2
+                                        |> Maybe.withDefault ""
+                                , oneCell =
+                                    spice
+                                        |> List.Extra.getAt 3
+                                        |> Maybe.map boolFromString
+                                        |> Maybe.withDefault False
+                                , twoCell =
+                                    spice
+                                        |> List.Extra.getAt 4
+                                        |> Maybe.map boolFromString
+                                        |> Maybe.withDefault False
+                                , fourCell =
+                                    spice
+                                        |> List.Extra.getAt 5
+                                        |> Maybe.map boolFromString
+                                        |> Maybe.withDefault False
+                                , eightCell =
+                                    spice
+                                        |> List.Extra.getAt 6
+                                        |> Maybe.map boolFromString
+                                        |> Maybe.withDefault False
+                                }
+                            )
+            in
+            ( { model | spices = spices }, Cmd.none )
 
         FetchedValues (Err _) ->
             ( model, Cmd.none )
@@ -266,22 +292,43 @@ update msg model =
 
         SelectSpice spice ->
             ( { model
-                | board =
-                    model.board
-                        |> List.map
-                            (List.map
-                                (\cell ->
-                                    if cell.status == Selected then
-                                        { cell | status = SpiceSelected spice }
-
-                                    else
-                                        cell
-                                )
-                            )
+                | selectedSpice = Just spice
                 , spiceModal = False
+                , board =
+                    model.board
+                        |> firstSelected One
               }
             , Cmd.none
             )
+
+        AddSpice ->
+            ( { model | spiceModal = True }, Cmd.none )
+
+        ConfirmSpice ->
+            model.selectedSpice
+                |> Maybe.map
+                    (\spice ->
+                        ( { model
+                            | board =
+                                model.board
+                                    |> List.map
+                                        (List.map
+                                            (\cell ->
+                                                if cell.status == Selected then
+                                                    { cell | status = SpiceSelected spice }
+
+                                                else
+                                                    cell
+                                            )
+                                        )
+                          }
+                        , Cmd.none
+                        )
+                    )
+                |> Maybe.withDefault ( model, Cmd.none )
+
+        ChangeArea area ->
+            ( { model | board = model.board |> removeSelected |> firstSelected area }, Cmd.none )
 
 
 joinClasses : List String -> Html.Attribute msg
@@ -291,7 +338,7 @@ joinClasses =
 
 
 view : Model -> Html.Html Msg
-view { board, spices, spiceModal } =
+view { board, spices, spiceModal, selectedSpice } =
     let
         spiceModalView =
             Html.div
@@ -340,28 +387,12 @@ view { board, spices, spiceModal } =
                                 , "text-size-caption"
                                 ]
                             ]
-                            [ Html.text "スパイスを選択してください" ]
+                            [ Html.text "スパイスを選択してください。" ]
                         ]
                     ]
                         ++ (spices
                                 |> List.map
                                     (\s ->
-                                        let
-                                            id =
-                                                s
-                                                    |> List.Extra.getAt 0
-                                                    |> Maybe.withDefault ""
-
-                                            name =
-                                                s
-                                                    |> List.Extra.getAt 1
-                                                    |> Maybe.withDefault ""
-
-                                            color =
-                                                s
-                                                    |> List.Extra.getAt 2
-                                                    |> Maybe.withDefault ""
-                                        in
                                         Html.div
                                             [ joinClasses
                                                 [ "my-2"
@@ -369,9 +400,9 @@ view { board, spices, spiceModal } =
                                                 , "hover:text-black55"
                                                 , "cursor-pointer"
                                                 ]
-                                            , Events.onClick <| SelectSpice <| Spice id name color
+                                            , Events.onClick <| SelectSpice s
                                             ]
-                                            [ Html.text name ]
+                                            [ Html.text s.name ]
                                     )
                            )
                 ]
@@ -388,7 +419,7 @@ view { board, spices, spiceModal } =
                 , "p-3"
                 ]
             ]
-            [ Html.div [ joinClasses [ "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Method" ]
+            [ Html.div [ joinClasses [ "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Puzzle" ]
             , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
                 (board
                     |> List.map
@@ -399,13 +430,14 @@ view { board, spices, spiceModal } =
                                         (\{ status, point } ->
                                             Html.div
                                                 ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
-                                                 , Events.onMouseDown <| OnMouseDown point
-                                                 , Events.onMouseEnter <| OnMouseEnter point
-                                                 , Events.onMouseUp <| OnMouseUp point
+
+                                                 --  , Events.onMouseDown <| OnMouseDown point
+                                                 --  , Events.onMouseEnter <| OnMouseEnter point
+                                                 --  , Events.onMouseUp <| OnMouseUp point
                                                  ]
                                                     ++ (case status of
                                                             Selected ->
-                                                                [ Attributes.style "background-color" "orange" ]
+                                                                [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
 
                                                             Blank ->
                                                                 [ Attributes.style "background-color" "#fbfadfa3" ]
@@ -428,6 +460,26 @@ view { board, spices, spiceModal } =
                                 )
                         )
                 )
+            , Html.div [] [ Html.button [ Events.onClick AddSpice, joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2", "mt-2" ] ] [ Html.text "スパイスを選択" ] ]
+            , let
+                button attributes text =
+                    Html.button (attributes ++ [ joinClasses [ "flex-1", "border", "border-grey", "rounded", "p-4", "mx-2" ] ]) [ Html.text text ]
+              in
+              case selectedSpice of
+                Just { name, oneCell, twoCell, fourCell, eightCell } ->
+                    Html.div []
+                        [ Html.div [ joinClasses [ "text-size-caption", "mt-3", "text-black55" ] ] [ Html.text "選択中のスパイス:" ]
+                        , Html.div [ joinClasses [ "text-size-body", "mb-3", "font-bold" ] ] [ Html.text name ]
+                        , Html.div [ joinClasses [ "flex" ] ]
+                            [ button [ Events.onClick <| ChangeArea One, Attributes.disabled <| not oneCell ] "x1"
+                            , button [ Events.onClick <| ChangeArea Two, Attributes.disabled <| not twoCell ] "x2"
+                            , button [ Events.onClick <| ChangeArea Four, Attributes.disabled <| not fourCell ] "x4"
+                            , button [ Events.onClick <| ChangeArea Eight, Attributes.disabled <| not eightCell ] "x8"
+                            ]
+                        ]
+
+                Nothing ->
+                    Html.text ""
             , if spiceModal then
                 spiceModalView
 
