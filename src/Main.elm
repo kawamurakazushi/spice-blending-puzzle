@@ -51,16 +51,20 @@ type alias Model =
     }
 
 
+initialBoard : Board
+initialBoard =
+    List.range 1 4
+        |> List.map
+            (\y ->
+                List.range 1 4
+                    |> List.map
+                        (\x -> Cell (Point x y) Blank)
+            )
+
+
 init : String -> ( Model, Cmd Msg )
 init key =
-    ( { board =
-            List.range 1 4
-                |> List.map
-                    (\y ->
-                        List.range 1 4
-                            |> List.map
-                                (\x -> Cell (Point x y) Blank)
-                    )
+    ( { board = initialBoard
       , spices = []
       , spiceModal = False
       , selectedSpice = Nothing
@@ -228,6 +232,7 @@ type Msg
     | AddSpice
     | ConfirmSpice
     | ChangeArea Area
+    | RefreshBoard
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -330,6 +335,9 @@ update msg model =
         ChangeArea area ->
             ( { model | board = model.board |> removeSelected |> firstSelected area }, Cmd.none )
 
+        RefreshBoard ->
+            ( { model | board = initialBoard }, Cmd.none )
+
 
 joinClasses : List String -> Html.Attribute msg
 joinClasses =
@@ -419,7 +427,14 @@ view { board, spices, spiceModal, selectedSpice } =
                 , "p-3"
                 ]
             ]
-            [ Html.div [ joinClasses [ "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Puzzle" ]
+            [ Html.div [ joinClasses [ "flex", "items-center", "mb-2" ] ]
+                [ Html.div [ joinClasses [ "flex-1", "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Puzzle" ]
+                , Html.button
+                    [ Events.onClick RefreshBoard
+                    , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black55", "text-size-small", "py-1", "px-2" ]
+                    ]
+                    [ Html.i [ Attributes.class "fa fa-redo-alt" ] [] ]
+                ]
             , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
                 (board
                     |> List.map
@@ -460,7 +475,13 @@ view { board, spices, spiceModal, selectedSpice } =
                                 )
                         )
                 )
-            , Html.div [] [ Html.button [ Events.onClick AddSpice, joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2", "mt-2" ] ] [ Html.text "スパイスを選択" ] ]
+            , Html.div []
+                [ Html.button
+                    [ Events.onClick AddSpice
+                    , joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2", "mt-2" ]
+                    ]
+                    [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
+                ]
             , let
                 button attributes text =
                     Html.button (attributes ++ [ joinClasses [ "flex-1", "border", "border-grey", "rounded", "p-4", "mx-2" ] ]) [ Html.text text ]
