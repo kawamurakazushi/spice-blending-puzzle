@@ -479,7 +479,7 @@ view { board, spices, spiceModal, selectedSpice } =
                         Just spice ->
                             Html.div [ joinClasses [ "flex-1", "flex", "items-center" ] ]
                                 [ Html.div [ joinClasses [ "flex-1", "text-size-body", "font-bold", "ml-3" ] ] [ Html.text spice.name ]
-                                , Html.button [ Events.onClick <| ConfirmSpice, joinClasses [ "rounded", "shadow-a", "bg-primary", "text-white", "font-bold", "text-size-small", "py-2", "px-2" ] ] [ Html.text "決定" ]
+                                , Html.button [ Events.onClick <| ConfirmSpice, joinClasses [ "rounded", "shadow-a", "bg-primary", "text-white", "font-bold", "text-size-small", "py-2", "px-3" ] ] [ Html.text "配置" ]
                                 ]
 
                         Nothing ->
