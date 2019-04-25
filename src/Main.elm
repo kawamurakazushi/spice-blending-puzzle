@@ -446,10 +446,6 @@ view { board, spices, spiceModal, selectedSpice } =
                                             (\{ status, point } ->
                                                 Html.div
                                                     ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
-
-                                                     --  , Events.onMouseDown <| OnMouseDown point
-                                                     --  , Events.onMouseEnter <| OnMouseEnter point
-                                                     --  , Events.onMouseUp <| OnMouseUp point
                                                      ]
                                                         ++ (case status of
                                                                 Selected ->
@@ -462,9 +458,6 @@ view { board, spices, spiceModal, selectedSpice } =
                                                                     [ Attributes.style "background-color" spice.color ]
                                                            )
                                                     )
-                                                    -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
-                                                    -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
-                                                    -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)
                                                     [ case status of
                                                         SpiceSelected { name } ->
                                                             Html.text name
@@ -476,12 +469,18 @@ view { board, spices, spiceModal, selectedSpice } =
                                     )
                             )
                     )
-                , Html.div []
+                , Html.div [ joinClasses [ "flex", "items-center", "my-3" ] ]
                     [ Html.button
                         [ Events.onClick AddSpice
-                        , joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2", "mt-2" ]
+                        , joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2" ]
                         ]
                         [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
+                    , case selectedSpice of
+                        Just { name } ->
+                            Html.div [ joinClasses [ "text-size-body", "font-bold", "ml-3" ] ] [ Html.text name ]
+
+                        Nothing ->
+                            Html.text ""
                     ]
                 ]
             , let
@@ -491,8 +490,7 @@ view { board, spices, spiceModal, selectedSpice } =
               case selectedSpice of
                 Just { name, oneCell, twoCell, fourCell, eightCell } ->
                     Html.div []
-                        [ Html.div [ joinClasses [ "text-size-caption", "mt-3", "text-black55" ] ] [ Html.text "選択中のスパイス:" ]
-                        , Html.div [ joinClasses [ "text-size-body", "mb-3", "font-bold" ] ] [ Html.text name ]
+                        [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "パズルの大きさを選んでください：" ]
                         , Html.div [ joinClasses [ "flex" ] ]
                             [ button [ Events.onClick <| ChangeArea One, Attributes.disabled <| not oneCell ] "x1"
                             , button [ Events.onClick <| ChangeArea Two, Attributes.disabled <| not twoCell ] "x2"
