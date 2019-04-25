@@ -16,6 +16,13 @@ type alias Point =
     }
 
 
+type Area
+    = One
+    | Two
+    | Four
+    | Eight
+
+
 type alias Spice =
     { id : String
     , name : String
@@ -24,6 +31,7 @@ type alias Spice =
     , twoCell : Bool
     , fourCell : Bool
     , eightCell : Bool
+    , selectedArea : Area
     }
 
 
@@ -180,13 +188,6 @@ pointsFromDiagnal startPoint endPoint =
     points
 
 
-type Area
-    = One
-    | Two
-    | Four
-    | Eight
-
-
 firstSelected : Area -> Board -> Board
 firstSelected area board =
     let
@@ -284,6 +285,7 @@ update msg model =
                                         |> List.Extra.getAt 6
                                         |> Maybe.map boolFromString
                                         |> Maybe.withDefault False
+                                , selectedArea = One
                                 }
                             )
             in
@@ -333,7 +335,15 @@ update msg model =
                 |> Maybe.withDefault ( model, Cmd.none )
 
         ChangeArea area ->
-            ( { model | board = model.board |> removeSelected |> firstSelected area }, Cmd.none )
+            ( { model
+                | board =
+                    model.board
+                        |> removeSelected
+                        |> firstSelected area
+                , selectedSpice = model.selectedSpice |> Maybe.map (\s -> { s | selectedArea = area })
+              }
+            , Cmd.none
+            )
 
         RefreshBoard ->
             ( { model | board = initialBoard }, Cmd.none )
@@ -487,18 +497,48 @@ view { board, spices, spiceModal, selectedSpice } =
                     ]
                 ]
             , let
-                button attributes text =
-                    Html.button (attributes ++ [ joinClasses [ "flex-1", "border", "border-grey", "rounded", "p-4", "mx-2" ] ]) [ Html.text text ]
+                button attributes active text =
+                    let
+                        c =
+                            if active then
+                                [ "border-primary", "text-black90" ]
+
+                            else
+                                [ "text-black10" ]
+                    in
+                    Html.button (attributes ++ [ joinClasses ([ "flex-1", "border", "rounded", "mx-2", "shadow-b", "p-2" ] ++ c) ])
+                        [ Html.div [ joinClasses [ "flex", "justify-end" ] ]
+                            [ if active then
+                                Html.i [ joinClasses [ "fa", "fa-check-circle", "text-primary" ] ] []
+
+                              else
+                                Html.i [ joinClasses [ "fa", "fa-circle" ] ] []
+                            ]
+                        , Html.div [ joinClasses [ "text-size-small" ] ] [ Html.text text ]
+                        ]
               in
               case selectedSpice of
-                Just { name, oneCell, twoCell, fourCell, eightCell } ->
+                Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
                     Html.div []
                         [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "パズルの大きさを選んでください：" ]
                         , Html.div [ joinClasses [ "flex" ] ]
-                            [ button [ Events.onClick <| ChangeArea One, Attributes.disabled <| not oneCell ] "x1"
-                            , button [ Events.onClick <| ChangeArea Two, Attributes.disabled <| not twoCell ] "x2"
-                            , button [ Events.onClick <| ChangeArea Four, Attributes.disabled <| not fourCell ] "x4"
-                            , button [ Events.onClick <| ChangeArea Eight, Attributes.disabled <| not eightCell ] "x8"
+                            [ button
+                                [ Events.onClick <| ChangeArea One
+                                , Attributes.disabled <| not oneCell
+                                ]
+                                (selectedArea == One)
+                                "x1"
+                            , button [ Events.onClick <| ChangeArea Two ] (selectedArea == Two) "×2"
+                            , if fourCell then
+                                button [ Events.onClick <| ChangeArea Four ] (selectedArea == Four) "x4"
+
+                              else
+                                Html.text ""
+                            , if eightCell then
+                                button [ Events.onClick <| ChangeArea Eight ] (selectedArea == Eight) "x8"
+
+                              else
+                                Html.text ""
                             ]
                         ]
 
