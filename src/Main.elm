@@ -516,29 +516,50 @@ view { board, spices, spiceModal, selectedSpice } =
                             ]
                         , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text text ]
                         ]
+
+                disabledButton =
+                    Html.div
+                        [ joinClasses
+                            [ "flex-1"
+                            , "border"
+                            , "rounded"
+                            , "mx-2"
+                            , "shadow-a"
+                            , "p-2"
+                            , "bg-black10"
+                            , "text-black55"
+                            , "flex"
+                            , "items-center"
+                            , "justify-center"
+                            ]
+                        ]
+                        [ Html.i [ joinClasses [ "fa", "fa-times", "text-size-small" ] ] [] ]
               in
               case selectedSpice of
                 Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
                     Html.div []
                         [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "パズルの大きさを選んでください：" ]
                         , Html.div [ joinClasses [ "flex" ] ]
-                            [ button
-                                [ Events.onClick <| ChangeArea One
-                                , Attributes.disabled <| not oneCell
-                                ]
-                                (selectedArea == One)
-                                "1個"
-                            , button [ Events.onClick <| ChangeArea Two ] (selectedArea == Two) "2個"
+                            [ if oneCell then
+                                button [ Events.onClick <| ChangeArea One ] (selectedArea == One) "1個"
+
+                              else
+                                disabledButton
+                            , if twoCell then
+                                button [ Events.onClick <| ChangeArea Two ] (selectedArea == Two) "2個"
+
+                              else
+                                disabledButton
                             , if fourCell then
                                 button [ Events.onClick <| ChangeArea Four ] (selectedArea == Four) "4個"
 
                               else
-                                Html.button [ joinClasses [ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2", "bg-black10", "text-black55" ] ] [ Html.text "×" ]
+                                disabledButton
                             , if eightCell then
                                 button [ Events.onClick <| ChangeArea Eight ] (selectedArea == Eight) "x8"
 
                               else
-                                Html.button [ joinClasses [ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2", "bg-black10", "text-black55" ] ] [ Html.text "×" ]
+                                disabledButton
                             ]
                         ]
 
