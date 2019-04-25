@@ -416,12 +416,11 @@ view { board, spices, spiceModal, selectedSpice } =
                 ]
     in
     Html.div
-        [ joinClasses [ "flex", "justify-center", "h-screen" ] ]
+        [ joinClasses [ "flex", "justify-center" ] ]
         [ Html.div
             [ joinClasses
                 [ "max-w-content"
                 , "w-full"
-                , "h-screen"
                 , "flex"
                 , "flex-col"
                 , "justify-center"
