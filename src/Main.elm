@@ -472,12 +472,15 @@ view { board, spices, spiceModal, selectedSpice } =
                 , Html.div [ joinClasses [ "flex", "items-center", "my-3" ] ]
                     [ Html.button
                         [ Events.onClick AddSpice
-                        , joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2" ]
+                        , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black", "text-size-small", "px-3", "py-2" ]
                         ]
                         [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
                     , case selectedSpice of
-                        Just { name } ->
-                            Html.div [ joinClasses [ "text-size-body", "font-bold", "ml-3" ] ] [ Html.text name ]
+                        Just spice ->
+                            Html.div [ joinClasses [ "flex-1", "flex", "items-center" ] ]
+                                [ Html.div [ joinClasses [ "flex-1", "text-size-body", "font-bold", "ml-3" ] ] [ Html.text spice.name ]
+                                , Html.button [ Events.onClick <| ConfirmSpice, joinClasses [ "rounded", "shadow-a", "bg-primary", "text-white", "font-bold", "text-size-small", "py-2", "px-2" ] ] [ Html.text "決定" ]
+                                ]
 
                         Nothing ->
                             Html.text ""
