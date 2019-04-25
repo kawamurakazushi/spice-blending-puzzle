@@ -416,71 +416,74 @@ view { board, spices, spiceModal, selectedSpice } =
                 ]
     in
     Html.div
-        [ joinClasses [ "flex", "justify-center" ] ]
+        [ joinClasses [ "flex", "justify-center", "h-screen" ] ]
         [ Html.div
             [ joinClasses
                 [ "max-w-content"
                 , "w-full"
+                , "h-screen"
                 , "flex"
                 , "flex-col"
                 , "justify-center"
                 , "p-3"
                 ]
             ]
-            [ Html.div [ joinClasses [ "flex", "items-center", "mb-2" ] ]
-                [ Html.div [ joinClasses [ "flex-1", "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Puzzle" ]
-                , Html.button
-                    [ Events.onClick RefreshBoard
-                    , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black55", "text-size-small", "py-1", "px-2" ]
+            [ Html.div [ joinClasses [ "flex-1", "overflow-auto" ] ]
+                [ Html.div [ joinClasses [ "flex", "items-center", "mb-2" ] ]
+                    [ Html.div [ joinClasses [ "flex-1", "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Puzzle" ]
+                    , Html.button
+                        [ Events.onClick RefreshBoard
+                        , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black55", "text-size-small", "py-1", "px-2" ]
+                        ]
+                        [ Html.i [ Attributes.class "fa fa-redo-alt" ] [] ]
                     ]
-                    [ Html.i [ Attributes.class "fa fa-redo-alt" ] [] ]
-                ]
-            , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
-                (board
-                    |> List.map
-                        (\line ->
-                            Html.div [ joinClasses [ "flex", "w-full" ] ] <|
-                                (line
-                                    |> List.map
-                                        (\{ status, point } ->
-                                            Html.div
-                                                ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
+                , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
+                    (board
+                        |> List.map
+                            (\line ->
+                                Html.div [ joinClasses [ "flex", "w-full" ] ] <|
+                                    (line
+                                        |> List.map
+                                            (\{ status, point } ->
+                                                Html.div
+                                                    ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
 
-                                                 --  , Events.onMouseDown <| OnMouseDown point
-                                                 --  , Events.onMouseEnter <| OnMouseEnter point
-                                                 --  , Events.onMouseUp <| OnMouseUp point
-                                                 ]
-                                                    ++ (case status of
-                                                            Selected ->
-                                                                [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
+                                                     --  , Events.onMouseDown <| OnMouseDown point
+                                                     --  , Events.onMouseEnter <| OnMouseEnter point
+                                                     --  , Events.onMouseUp <| OnMouseUp point
+                                                     ]
+                                                        ++ (case status of
+                                                                Selected ->
+                                                                    [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
 
-                                                            Blank ->
-                                                                [ Attributes.style "background-color" "#fbfadfa3" ]
+                                                                Blank ->
+                                                                    [ Attributes.style "background-color" "#fbfadfa3" ]
 
-                                                            SpiceSelected spice ->
-                                                                [ Attributes.style "background-color" spice.color ]
-                                                       )
-                                                )
-                                                -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
-                                                -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
-                                                -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)
-                                                [ case status of
-                                                    SpiceSelected { name } ->
-                                                        Html.text name
+                                                                SpiceSelected spice ->
+                                                                    [ Attributes.style "background-color" spice.color ]
+                                                           )
+                                                    )
+                                                    -- , Events.on "touchmove" <| Json.Decode.succeed (OnMouseEnter point)
+                                                    -- , Events.on "touchstart" <| Json.Decode.succeed (OnMouseDown point)
+                                                    -- , Events.on "touchend" <| Json.Decode.succeed (OnMouseUp point)
+                                                    [ case status of
+                                                        SpiceSelected { name } ->
+                                                            Html.text name
 
-                                                    _ ->
-                                                        Html.text ""
-                                                ]
-                                        )
-                                )
-                        )
-                )
-            , Html.div []
-                [ Html.button
-                    [ Events.onClick AddSpice
-                    , joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2", "mt-2" ]
+                                                        _ ->
+                                                            Html.text ""
+                                                    ]
+                                            )
+                                    )
+                            )
+                    )
+                , Html.div []
+                    [ Html.button
+                        [ Events.onClick AddSpice
+                        , joinClasses [ "border", "border-primary55", "rounded", "shadow-a", "text-primary", "text-size-small", "px-3", "py-2", "mt-2" ]
+                        ]
+                        [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
                     ]
-                    [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
                 ]
             , let
                 button attributes text =
