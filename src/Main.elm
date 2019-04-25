@@ -506,15 +506,15 @@ view { board, spices, spiceModal, selectedSpice } =
                             else
                                 [ "text-black10" ]
                     in
-                    Html.button (attributes ++ [ joinClasses ([ "flex-1", "border", "rounded", "mx-2", "shadow-b", "p-2" ] ++ c) ])
-                        [ Html.div [ joinClasses [ "flex", "justify-end" ] ]
+                    Html.button (attributes ++ [ joinClasses ([ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2" ] ++ c) ])
+                        [ Html.div [ joinClasses [ "flex", "justify-center" ] ]
                             [ if active then
-                                Html.i [ joinClasses [ "fa", "fa-check-circle", "text-primary" ] ] []
+                                Html.i [ joinClasses [ "fa", "fa-check-circle", "text-primary", "text-size-small" ] ] []
 
                               else
                                 Html.i [ joinClasses [ "fa", "fa-circle" ] ] []
                             ]
-                        , Html.div [ joinClasses [ "text-size-small" ] ] [ Html.text text ]
+                        , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text text ]
                         ]
               in
               case selectedSpice of
@@ -527,18 +527,18 @@ view { board, spices, spiceModal, selectedSpice } =
                                 , Attributes.disabled <| not oneCell
                                 ]
                                 (selectedArea == One)
-                                "x1"
-                            , button [ Events.onClick <| ChangeArea Two ] (selectedArea == Two) "×2"
+                                "1個"
+                            , button [ Events.onClick <| ChangeArea Two ] (selectedArea == Two) "2個"
                             , if fourCell then
-                                button [ Events.onClick <| ChangeArea Four ] (selectedArea == Four) "x4"
+                                button [ Events.onClick <| ChangeArea Four ] (selectedArea == Four) "4個"
 
                               else
-                                Html.text ""
+                                Html.button [ joinClasses [ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2", "bg-black10", "text-black55" ] ] [ Html.text "×" ]
                             , if eightCell then
                                 button [ Events.onClick <| ChangeArea Eight ] (selectedArea == Eight) "x8"
 
                               else
-                                Html.text ""
+                                Html.button [ joinClasses [ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2", "bg-black10", "text-black55" ] ] [ Html.text "×" ]
                             ]
                         ]
 
