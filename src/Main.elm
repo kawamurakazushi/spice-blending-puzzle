@@ -479,7 +479,8 @@ view { board, spices, spiceModal, selectedSpice } =
                                     )
                             )
                     )
-                , Html.div [ joinClasses [ "flex", "items-center", "my-3" ] ]
+                , Html.div [ joinClasses [ "text-size-caption", "text-black55", "my-2" ] ] [ Html.text "1. スパイスを選択してください" ]
+                , Html.div [ joinClasses [ "flex", "items-center", "mb-3" ] ]
                     [ Html.button
                         [ Events.onClick AddSpice
                         , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black", "text-size-small", "px-3", "py-2" ]
@@ -489,7 +490,8 @@ view { board, spices, spiceModal, selectedSpice } =
                         Just spice ->
                             Html.div [ joinClasses [ "flex-1", "flex", "items-center" ] ]
                                 [ Html.div [ joinClasses [ "flex-1", "text-size-body", "font-bold", "ml-3" ] ] [ Html.text spice.name ]
-                                , Html.button [ Events.onClick <| ConfirmSpice, joinClasses [ "rounded", "shadow-a", "bg-primary", "text-white", "font-bold", "text-size-small", "py-2", "px-3" ] ] [ Html.text "配置" ]
+
+                                -- , Html.button [ Events.onClick <| ConfirmSpice, joinClasses [ "rounded", "shadow-a", "bg-primary", "text-white", "font-bold", "text-size-small", "py-2", "px-3" ] ] [ Html.text "配置" ]
                                 ]
 
                         Nothing ->
@@ -538,7 +540,7 @@ view { board, spices, spiceModal, selectedSpice } =
               case selectedSpice of
                 Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
                     Html.div []
-                        [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "パズルの大きさを選んでください：" ]
+                        [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
                         , Html.div [ joinClasses [ "flex" ] ]
                             [ if oneCell then
                                 button [ Events.onClick <| ChangeArea One ] (selectedArea == One) "1個"
