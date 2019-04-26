@@ -51,10 +51,15 @@ type alias Board =
     List (List Cell)
 
 
+type Modal
+    = SpiceModal
+    | DeleteModal Spice
+
+
 type alias Model =
     { board : Board
     , spices : List Spice
-    , spiceModal : Bool
+    , modal : Maybe Modal
     , selectedSpice : Maybe Spice
     }
 
@@ -74,7 +79,7 @@ init : String -> ( Model, Cmd Msg )
 init key =
     ( { board = initialBoard
       , spices = []
-      , spiceModal = False
+      , modal = Nothing
       , selectedSpice = Nothing
       }
     , Spreadsheet.getValues
@@ -234,6 +239,8 @@ type Msg
     | ConfirmSpice
     | ChangeArea Area
     | RefreshBoard
+    | OpenDeleteModal Spice
+    | DeleteSpice Spice
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -295,12 +302,12 @@ update msg model =
             ( model, Cmd.none )
 
         CloseModal ->
-            ( { model | spiceModal = False }, Cmd.none )
+            ( { model | modal = Nothing }, Cmd.none )
 
         SelectSpice spice ->
             ( { model
                 | selectedSpice = Just spice
-                , spiceModal = False
+                , modal = Nothing
                 , board =
                     model.board
                         |> firstSelected One
@@ -309,7 +316,7 @@ update msg model =
             )
 
         AddSpice ->
-            ( { model | spiceModal = True }, Cmd.none )
+            ( { model | modal = Just SpiceModal }, Cmd.none )
 
         ConfirmSpice ->
             model.selectedSpice
@@ -348,6 +355,33 @@ update msg model =
         RefreshBoard ->
             ( { model | board = initialBoard }, Cmd.none )
 
+        OpenDeleteModal spice ->
+            ( { model | modal = Just <| DeleteModal spice }, Cmd.none )
+
+        DeleteSpice spice ->
+            ( { model
+                | board =
+                    List.map
+                        (List.map
+                            (\cell ->
+                                case cell.status of
+                                    SpiceSelected s ->
+                                        if s == spice then
+                                            { cell | status = Blank }
+
+                                        else
+                                            cell
+
+                                    _ ->
+                                        cell
+                            )
+                        )
+                        model.board
+                , modal = Nothing
+              }
+            , Cmd.none
+            )
+
 
 joinClasses : List String -> Html.Attribute msg
 joinClasses =
@@ -356,75 +390,7 @@ joinClasses =
 
 
 view : Model -> Html.Html Msg
-view { board, spices, spiceModal, selectedSpice } =
-    let
-        spiceModalView =
-            Html.div
-                [ joinClasses
-                    [ "fixed"
-                    , "pin"
-                    , "bg-white55"
-                    , "flex"
-                    , "justify-center"
-                    , "items-center"
-                    ]
-                ]
-                [ Html.div
-                    [ joinClasses
-                        [ "bg-white"
-                        , "max-w-content"
-                        , "w-full"
-                        , "shadow-a"
-                        , "p-3"
-                        , "rounded"
-                        ]
-                    ]
-                  <|
-                    [ Html.div
-                        [ joinClasses
-                            [ "flex"
-                            , "flex-row-reverse"
-                            , "justify-between"
-                            , "items-center"
-                            ]
-                        ]
-                        [ Html.div
-                            [ joinClasses
-                                [ "cursor-pointer"
-                                , "text-black55"
-                                , "text-size-h5"
-                                , "hover:text-black10"
-                                , "p-2"
-                                ]
-                            , Events.onClick CloseModal
-                            ]
-                            [ Html.text "×" ]
-                        , Html.div
-                            [ joinClasses
-                                [ "text-black55"
-                                , "text-size-caption"
-                                ]
-                            ]
-                            [ Html.text "スパイスを選択してください。" ]
-                        ]
-                    ]
-                        ++ (spices
-                                |> List.map
-                                    (\s ->
-                                        Html.div
-                                            [ joinClasses
-                                                [ "my-2"
-                                                , "text-size-body"
-                                                , "hover:text-black55"
-                                                , "cursor-pointer"
-                                                ]
-                                            , Events.onClick <| SelectSpice s
-                                            ]
-                                            [ Html.text s.name ]
-                                    )
-                           )
-                ]
-    in
+view { board, spices, modal, selectedSpice } =
     Html.div
         [ joinClasses [ "flex", "justify-center" ] ]
         [ Html.div
@@ -552,7 +518,7 @@ view { board, spices, spiceModal, selectedSpice } =
                                                                 [ Attributes.style "background-color" "#fbfadfa3" ]
 
                                                             SpiceSelected spice ->
-                                                                [ Attributes.style "background-color" spice.color ]
+                                                                [ Events.onClick <| OpenDeleteModal spice, Attributes.style "background-color" spice.color ]
                                                        )
                                                 )
                                                 [ case status of
@@ -566,11 +532,63 @@ view { board, spices, spiceModal, selectedSpice } =
                                 )
                         )
                 )
-            , if spiceModal then
-                spiceModalView
+            , let
+                modalView a =
+                    Html.div [ joinClasses [ "fixed", "pin", "bg-white55", "flex", "justify-center", "items-center" ] ]
+                        [ Html.div [ joinClasses [ "bg-white", "max-w-content", "w-full", "shadow-a", "p-4", "rounded" ] ]
+                            [ Html.div [ joinClasses [] ]
+                                [ a
+                                ]
+                            ]
+                        ]
+              in
+              case modal of
+                Just (DeleteModal spice) ->
+                    modalView <|
+                        Html.div []
+                            [ Html.div [ joinClasses [ "text-size-body", "mb-3" ] ] [ Html.text "選択したスパイスを解除しますか？" ]
+                            , Html.div [ joinClasses [ "text-size-caption", "mb-1", "text-black55" ] ] [ Html.text "選択中のスパイス:" ]
+                            , Html.div [ joinClasses [ "text-size-caption", "mb-3", "text-black90", "font-bold" ] ] [ Html.text spice.name ]
+                            , Html.div [ joinClasses [ "flex", "w-full" ] ]
+                                [ Html.button
+                                    [ Events.onClick CloseModal
+                                    , joinClasses
+                                        [ "flex-1", "rounded", "text-size-small", "shadow-a", "p-2", "text-black55", "mr-2" ]
+                                    ]
+                                    [ Html.text "キャンセル" ]
+                                , Html.button
+                                    [ Events.onClick <| DeleteSpice spice
+                                    , joinClasses
+                                        [ "flex-1", "rounded", "text-size-small", "shadow-a", "p-2", "bg-error", "text-white", "ml-2" ]
+                                    ]
+                                    [ Html.text "削除" ]
+                                ]
+                            ]
 
-              else
-                Html.text ""
+                Nothing ->
+                    Html.text ""
+
+                Just SpiceModal ->
+                    modalView <|
+                        Html.div []
+                            ([ Html.div [ joinClasses [ "text-black55", "text-size-caption" ] ] [ Html.text "スパイスを選択してください。" ]
+                             ]
+                                ++ (spices
+                                        |> List.map
+                                            (\s ->
+                                                Html.div
+                                                    [ joinClasses
+                                                        [ "my-2"
+                                                        , "text-size-body"
+                                                        , "hover:text-black55"
+                                                        , "cursor-pointer"
+                                                        ]
+                                                    , Events.onClick <| SelectSpice s
+                                                    ]
+                                                    [ Html.text s.name ]
+                                            )
+                                   )
+                            )
             ]
         ]
 
