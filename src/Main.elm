@@ -446,39 +446,6 @@ view { board, spices, spiceModal, selectedSpice } =
                         ]
                         [ Html.i [ Attributes.class "fa fa-redo-alt" ] [] ]
                     ]
-                , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
-                    (board
-                        |> List.map
-                            (\line ->
-                                Html.div [ joinClasses [ "flex", "w-full" ] ] <|
-                                    (line
-                                        |> List.map
-                                            (\{ status, point } ->
-                                                Html.div
-                                                    ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
-                                                     ]
-                                                        ++ (case status of
-                                                                Selected ->
-                                                                    [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
-
-                                                                Blank ->
-                                                                    [ Attributes.style "background-color" "#fbfadfa3" ]
-
-                                                                SpiceSelected spice ->
-                                                                    [ Attributes.style "background-color" spice.color ]
-                                                           )
-                                                    )
-                                                    [ case status of
-                                                        SpiceSelected { name } ->
-                                                            Html.text name
-
-                                                        _ ->
-                                                            Html.text ""
-                                                    ]
-                                            )
-                                    )
-                            )
-                    )
                 , Html.div [ joinClasses [ "text-size-caption", "text-black55", "my-2" ] ] [ Html.text "1. スパイスを選択してください" ]
                 , Html.div [ joinClasses [ "flex", "items-center", "mb-3" ] ]
                     [ Html.button
@@ -490,8 +457,6 @@ view { board, spices, spiceModal, selectedSpice } =
                         Just spice ->
                             Html.div [ joinClasses [ "flex-1", "flex", "items-center" ] ]
                                 [ Html.div [ joinClasses [ "flex-1", "text-size-body", "font-bold", "ml-3" ] ] [ Html.text spice.name ]
-
-                                -- , Html.button [ Events.onClick <| ConfirmSpice, joinClasses [ "rounded", "shadow-a", "bg-primary", "text-white", "font-bold", "text-size-small", "py-2", "px-3" ] ] [ Html.text "配置" ]
                                 ]
 
                         Nothing ->
@@ -539,7 +504,7 @@ view { board, spices, spiceModal, selectedSpice } =
               in
               case selectedSpice of
                 Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
-                    Html.div []
+                    Html.div [ joinClasses [ "mb-3" ] ]
                         [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
                         , Html.div [ joinClasses [ "flex" ] ]
                             [ if oneCell then
@@ -567,6 +532,40 @@ view { board, spices, spiceModal, selectedSpice } =
 
                 Nothing ->
                     Html.text ""
+            , Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "3. 場所を決定してください" ]
+            , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
+                (board
+                    |> List.map
+                        (\line ->
+                            Html.div [ joinClasses [ "flex", "w-full" ] ] <|
+                                (line
+                                    |> List.map
+                                        (\{ status, point } ->
+                                            Html.div
+                                                ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
+                                                 ]
+                                                    ++ (case status of
+                                                            Selected ->
+                                                                [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
+
+                                                            Blank ->
+                                                                [ Attributes.style "background-color" "#fbfadfa3" ]
+
+                                                            SpiceSelected spice ->
+                                                                [ Attributes.style "background-color" spice.color ]
+                                                       )
+                                                )
+                                                [ case status of
+                                                    SpiceSelected { name } ->
+                                                        Html.text name
+
+                                                    _ ->
+                                                        Html.text ""
+                                                ]
+                                        )
+                                )
+                        )
+                )
             , if spiceModal then
                 spiceModalView
 
