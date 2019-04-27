@@ -3,11 +3,12 @@ module Board exposing
     , Board
     , Cell
     , Point
-    , removeSelected
     , Spice
     , Status(..)
     , firstSelected
+    , include
     , initialBoard
+    , removeSelected
     , spiceInside
     )
 
@@ -177,10 +178,9 @@ set point status =
 
 
 get : Point -> Board -> Maybe Status
-get point board =
-    board
-        |> List.foldr (++) []
-        |> List.foldl
+get point =
+    List.foldr (++) []
+        >> List.foldl
             (\cell status ->
                 if cell.point == point then
                     Just cell.status
@@ -203,3 +203,22 @@ removeSelected =
                     cell
             )
         )
+
+
+include : Spice -> Board -> Bool
+include spice =
+    List.foldr (++) []
+        >> List.foldl
+            (\cell b ->
+                case cell.status of
+                    SpiceSelected s ->
+                        if s == spice then
+                            True
+
+                        else
+                            b
+
+                    _ ->
+                        b
+            )
+            False
