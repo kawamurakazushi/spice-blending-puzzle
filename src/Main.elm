@@ -242,12 +242,13 @@ view { board, spices, modal, selectedSpice } =
                             , "p-2"
                             , "bg-black10"
                             , "text-black55"
-                            , "flex"
-                            , "items-center"
-                            , "justify-center"
                             ]
                         ]
-                        [ Html.i [ joinClasses [ "fa", "fa-times", "text-size-small" ] ] [] ]
+                        [ Html.div [ joinClasses [ "flex", "justify-center" ] ]
+                            [ Html.div [ joinClasses [ "text-size-small" ] ] [ Html.text "\u{3000}" ]
+                            ]
+                        , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text "\u{3000}" ]
+                        ]
               in
               Html.div [ joinClasses [ "mb-3" ] ]
                 [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
@@ -291,7 +292,7 @@ view { board, spices, modal, selectedSpice } =
                                     [ "border", "border-white", "text-size-caption", "flex", "justify-center", "items-center" ]
                                         ++ (case status of
                                                 Board.Selected ->
-                                                    [ "bg-warning", "shadow-b" ]
+                                                    [ "z-10", "shadow-b" ]
 
                                                 Board.SpiceSelected _ ->
                                                     [ "" ]
@@ -302,10 +303,12 @@ view { board, spices, modal, selectedSpice } =
                                  ]
                                     ++ (case status of
                                             Board.Selected ->
-                                                [ Events.onClick <| ConfirmSpice ]
+                                                [ Attributes.style "outline" "3px solid oldlace"
+                                                , Events.onClick <| ConfirmSpice
+                                                ]
 
                                             Board.SpiceSelected spice ->
-                                                [ Attributes.style "background-color" spice.color, Events.onClick <| OpenDeleteModal spice ]
+                                                [ Attributes.style "background-color" (spice.color ++ "70"), Events.onClick <| OpenDeleteModal spice ]
 
                                             _ ->
                                                 []
@@ -313,7 +316,7 @@ view { board, spices, modal, selectedSpice } =
                                 )
                                 (case status of
                                     Board.Selected ->
-                                        [ Html.text "" ]
+                                        [ Html.div [ joinClasses [ "rounded-full", "p-3", "shadow-a" ], Attributes.style "background-color" "oldlace" ] [ Html.text "決定" ] ]
 
                                     Board.SpiceSelected spice ->
                                         [ Html.text spice.name ]
@@ -325,7 +328,7 @@ view { board, spices, modal, selectedSpice } =
                 )
             , let
                 modalView a =
-                    Html.div [ joinClasses [ "fixed", "pin", "bg-white55", "flex", "justify-center", "items-center" ] ]
+                    Html.div [ joinClasses [ "fixed", "pin", "bg-white55", "flex", "justify-center", "items-center", "z-20" ] ]
                         [ Html.div [ joinClasses [ "bg-white", "max-w-content", "w-full", "shadow-a", "p-4", "rounded" ] ]
                             [ Html.div [ joinClasses [] ]
                                 [ a
