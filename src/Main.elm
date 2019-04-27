@@ -143,6 +143,7 @@ update msg model =
                                                     cell
                                             )
                                         )
+                            , selectedSpice = Nothing
                           }
                         , Cmd.none
                         )
@@ -353,7 +354,7 @@ view { board, spices, modal, selectedSpice } =
               case modal of
                 Just (DeleteModal spice) ->
                     modalView <|
-                        Html.div [ joinClasses [ "shadow-b" ] ]
+                        Html.div [ joinClasses [] ]
                             [ Html.div [ joinClasses [ "text-size-body", "mb-3" ] ] [ Html.text "選択したスパイスを解除しますか？" ]
                             , Html.div [ joinClasses [ "text-size-caption", "mb-1", "text-black55" ] ] [ Html.text "選択中のスパイス:" ]
                             , Html.div [ joinClasses [ "text-size-caption", "mb-3", "text-black90", "font-bold" ] ] [ Html.text spice.name ]
