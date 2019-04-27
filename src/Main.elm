@@ -327,11 +327,11 @@ view { board, spices, modal, selectedSpice } =
                         )
                 )
             , let
-                modalView a =
+                modalView body =
                     Html.div [ joinClasses [ "fixed", "pin", "bg-white55", "flex", "justify-center", "items-center", "z-20" ] ]
                         [ Html.div [ joinClasses [ "bg-white", "max-w-content", "w-full", "shadow-a", "p-4", "rounded" ] ]
                             [ Html.div [ joinClasses [] ]
-                                [ a
+                                [ body
                                 ]
                             ]
                         ]
@@ -340,7 +340,9 @@ view { board, spices, modal, selectedSpice } =
                 Just (DeleteModal spice) ->
                     modalView <|
                         Html.div [ joinClasses [] ]
-                            [ Html.div [ joinClasses [ "text-size-body", "mb-3" ] ] [ Html.text "選択したスパイスを解除しますか？" ]
+                            [ Html.div [ joinClasses [ "flex" ] ]
+                                [ Html.div [ joinClasses [ "flex-1", "text-size-body", "mb-3" ] ] [ Html.text "選択したスパイスを解除しますか？" ]
+                                ]
                             , Html.div [ joinClasses [ "text-size-caption", "mb-1", "text-black55" ] ] [ Html.text "選択中のスパイス:" ]
                             , Html.div [ joinClasses [ "text-size-caption", "mb-3", "text-black90", "font-bold" ] ] [ Html.text spice.name ]
                             , Html.div [ joinClasses [ "flex", "w-full" ] ]
@@ -362,7 +364,10 @@ view { board, spices, modal, selectedSpice } =
                 Just SpiceModal ->
                     modalView <|
                         Html.div []
-                            [ Html.div [ joinClasses [ "text-size-body", "mb-3" ] ] [ Html.text "スパイスを選択してください。" ]
+                            [ Html.div [ joinClasses [ "flex", "mb-3", "items-center" ] ]
+                                [ Html.div [ joinClasses [ "flex-1", "text-size-body" ] ] [ Html.text "スパイスを選択してください。" ]
+                                , Html.i [ Events.onClick CloseModal, joinClasses [ "fa", "fa-times", "text-size-h5", "text-black55", "p-2" ] ] []
+                                ]
                             , Html.table [ joinClasses [ "w-full", "text-size-caption" ] ] <|
                                 [ Html.tr [ joinClasses [ "text-black55", "border-b" ] ]
                                     [ Html.td [ joinClasses [ "p-2" ] ] [ Html.text "" ]
