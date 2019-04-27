@@ -212,7 +212,7 @@ include spice =
             (\cell b ->
                 case cell.status of
                     SpiceSelected s ->
-                        if s == spice then
+                        if s.id == spice.id then
                             True
 
                         else
