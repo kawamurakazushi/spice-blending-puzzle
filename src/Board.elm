@@ -91,7 +91,7 @@ firstSelected area board =
                                     Eight ->
                                         { p | x = p.x + 1, y = p.y + 3 }
                         in
-                        if List.isEmpty points && (not <| spiceInside cell.point pointArea board) then
+                        if List.isEmpty points && pointArea.x <= 4 && pointArea.y <= 4 && (not <| spiceInside cell.point pointArea board) then
                             pointsFromDiagnal cell.point pointArea
 
                         else
