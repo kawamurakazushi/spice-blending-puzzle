@@ -468,11 +468,11 @@ view { board, spices, modal, selectedSpice } =
                         ]
                         [ Html.i [ joinClasses [ "fa", "fa-times", "text-size-small" ] ] [] ]
               in
-              case selectedSpice of
-                Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
-                    Html.div [ joinClasses [ "mb-3" ] ]
-                        [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
-                        , Html.div [ joinClasses [ "flex" ] ]
+              Html.div [ joinClasses [ "mb-3" ] ]
+                [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
+                , Html.div [ joinClasses [ "flex" ] ] <|
+                    case selectedSpice of
+                        Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
                             [ if oneCell then
                                 button [ Events.onClick <| ChangeArea One ] (selectedArea == One) "1個"
 
@@ -489,15 +489,15 @@ view { board, spices, modal, selectedSpice } =
                               else
                                 disabledButton
                             , if eightCell then
-                                button [ Events.onClick <| ChangeArea Eight ] (selectedArea == Eight) "x8"
+                                button [ Events.onClick <| ChangeArea Eight ] (selectedArea == Eight) "8個"
 
                               else
                                 disabledButton
                             ]
-                        ]
 
-                Nothing ->
-                    Html.text ""
+                        Nothing ->
+                            List.repeat 4 disabledButton
+                ]
             , Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "3. 場所を決定してください" ]
             , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
                 (board
@@ -565,30 +565,67 @@ view { board, spices, modal, selectedSpice } =
                                 ]
                             ]
 
-                Nothing ->
-                    Html.text ""
-
                 Just SpiceModal ->
                     modalView <|
                         Html.div []
-                            ([ Html.div [ joinClasses [ "text-black55", "text-size-caption" ] ] [ Html.text "スパイスを選択してください。" ]
-                             ]
-                                ++ (spices
-                                        |> List.map
-                                            (\s ->
-                                                Html.div
-                                                    [ joinClasses
-                                                        [ "my-2"
-                                                        , "text-size-body"
-                                                        , "hover:text-black55"
-                                                        , "cursor-pointer"
+                            [ Html.div [ joinClasses [ "text-size-body", "mb-3" ] ] [ Html.text "スパイスを選択してください。" ]
+                            , Html.table [ joinClasses [ "w-full", "text-size-caption" ] ] <|
+                                [ Html.tr [ joinClasses [ "text-black55", "border-b" ] ]
+                                    [ Html.td [ joinClasses [ "p-2" ] ] [ Html.text "スパイス" ]
+                                    , Html.td [ joinClasses [ "p-2" ] ] [ Html.text "1個" ]
+                                    , Html.td [ joinClasses [ "p-2" ] ] [ Html.text "2個" ]
+                                    , Html.td [ joinClasses [ "p-2" ] ] [ Html.text "4個" ]
+                                    , Html.td [ joinClasses [ "p-2" ] ] [ Html.text "8個" ]
+                                    ]
+                                ]
+                                    ++ (spices
+                                            |> List.map
+                                                (\s ->
+                                                    Html.tr
+                                                        [ joinClasses
+                                                            [ "my-2"
+                                                            , "hover:text-black55"
+                                                            , "cursor-pointer"
+                                                            , "border-b"
+                                                            ]
+                                                        , Events.onClick <| SelectSpice s
                                                         ]
-                                                    , Events.onClick <| SelectSpice s
-                                                    ]
-                                                    [ Html.text s.name ]
-                                            )
-                                   )
-                            )
+                                                        [ Html.td [ joinClasses [ "font-bold", "p-2" ] ] [ Html.text s.name ]
+                                                        , Html.td [ joinClasses [ "text-primary", "p-2" ] ]
+                                                            [ if s.oneCell then
+                                                                Html.i [ joinClasses [ "fa", "fa-check-square" ] ] []
+
+                                                              else
+                                                                Html.text ""
+                                                            ]
+                                                        , Html.td [ joinClasses [ "text-primary", "p-2" ] ]
+                                                            [ if s.twoCell then
+                                                                Html.i [ joinClasses [ "fa", "fa-check-square" ] ] []
+
+                                                              else
+                                                                Html.text ""
+                                                            ]
+                                                        , Html.td [ joinClasses [ "text-primary", "p-2" ] ]
+                                                            [ if s.fourCell then
+                                                                Html.i [ joinClasses [ "fa", "fa-check-square" ] ] []
+
+                                                              else
+                                                                Html.text ""
+                                                            ]
+                                                        , Html.td [ joinClasses [ "text-primary", "p-2" ] ]
+                                                            [ if s.eightCell then
+                                                                Html.i [ joinClasses [ "fa", "fa-check-square" ] ] []
+
+                                                              else
+                                                                Html.text ""
+                                                            ]
+                                                        ]
+                                                )
+                                       )
+                            ]
+
+                Nothing ->
+                    Html.text ""
             ]
         ]
 

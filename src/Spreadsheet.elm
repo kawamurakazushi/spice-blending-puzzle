@@ -33,6 +33,6 @@ getValues toMsg (Key key) (SpreadsheetId id) (SheetName name) =
                 (Decode.field "values" (Decode.list (Decode.list Decode.string)))
     in
     Http.get
-        { url = Url.Builder.crossOrigin "https://sheets.googleapis.com" [ "v4", "spreadsheets", id, "values", name ++ "!A:G" ] [ Url.Builder.string "key" key ]
+        { url = Url.Builder.crossOrigin "https://sheets.googleapis.com" [ "v4", "spreadsheets", id, "values", name ++ "!A2:G" ] [ Url.Builder.string "key" key ]
         , expect = Http.expectJson toMsg decoder
         }
