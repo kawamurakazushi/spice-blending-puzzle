@@ -1,5 +1,6 @@
-module Main exposing (Board, Cell, Model, Msg(..), Point, Spice, Status(..), set, update, view)
+module Main exposing (Modal(..), Model, Msg(..), init, main, subscriptions, update, view)
 
+import Board
 import Browser
 import Html
 import Html.Attributes as Attributes
@@ -10,74 +11,22 @@ import List.Extra
 import Spreadsheet
 
 
-type alias Point =
-    { x : Int
-    , y : Int
-    }
-
-
-type Area
-    = One
-    | Two
-    | Four
-    | Eight
-
-
-type alias Spice =
-    { id : String
-    , name : String
-    , color : String
-    , oneCell : Bool
-    , twoCell : Bool
-    , fourCell : Bool
-    , eightCell : Bool
-    , selectedArea : Area
-    }
-
-
-type Status
-    = Selected
-    | Blank
-    | SpiceSelected Spice
-
-
-type alias Cell =
-    { point : Point
-    , status : Status
-    }
-
-
-type alias Board =
-    List (List Cell)
-
-
 type Modal
     = SpiceModal
-    | DeleteModal Spice
+    | DeleteModal Board.Spice
 
 
 type alias Model =
-    { board : Board
-    , spices : List Spice
+    { board : Board.Board
+    , spices : List Board.Spice
     , modal : Maybe Modal
-    , selectedSpice : Maybe Spice
+    , selectedSpice : Maybe Board.Spice
     }
-
-
-initialBoard : Board
-initialBoard =
-    List.range 1 4
-        |> List.map
-            (\y ->
-                List.range 1 4
-                    |> List.map
-                        (\x -> Cell (Point x y) Blank)
-            )
 
 
 init : String -> ( Model, Cmd Msg )
 init key =
-    ( { board = initialBoard
+    ( { board = Board.initialBoard
       , spices = []
       , modal = Nothing
       , selectedSpice = Nothing
@@ -90,157 +39,16 @@ init key =
     )
 
 
-set : Point -> Status -> Board -> Board
-set point status =
-    List.map
-        (List.map
-            (\cell ->
-                if cell.point == point then
-                    { cell | status = status }
-
-                else
-                    cell
-            )
-        )
-
-
-get : Point -> Board -> Maybe Status
-get point board =
-    board
-        |> List.foldr (++) []
-        |> List.foldl
-            (\cell status ->
-                if cell.point == point then
-                    Just cell.status
-
-                else
-                    status
-            )
-            Nothing
-
-
-removeSelected : Board -> Board
-removeSelected =
-    List.map
-        (List.map
-            (\cell ->
-                if cell.status == Selected then
-                    { cell | status = Blank }
-
-                else
-                    cell
-            )
-        )
-
-
-spiceInside : Point -> Point -> Board -> Bool
-spiceInside startPoint endPoint =
-    let
-        between : Int -> Int -> Int -> Bool
-        between a b value =
-            if a >= value && value >= b then
-                True
-
-            else if b >= value && value >= a then
-                True
-
-            else
-                False
-    in
-    List.foldr (++) []
-        >> List.foldl
-            (\cell inside ->
-                inside
-                    || (case cell.status of
-                            SpiceSelected _ ->
-                                between startPoint.x endPoint.x cell.point.x
-                                    && between startPoint.y endPoint.y cell.point.y
-
-                            _ ->
-                                inside
-                       )
-            )
-            False
-
-
-pointsFromDiagnal : Point -> Point -> List Point
-pointsFromDiagnal startPoint endPoint =
-    let
-        range : Int -> Int -> List Int
-        range a b =
-            if a > b then
-                List.range b a
-
-            else
-                List.range a b
-
-        xDiff =
-            endPoint.x - startPoint.x
-
-        yDiff =
-            endPoint.y - startPoint.y
-
-        points : List Point
-        points =
-            range 0 xDiff
-                |> List.map
-                    (\x ->
-                        range 0 yDiff
-                            |> List.map (\y -> Point (startPoint.x + x) (startPoint.y + y))
-                    )
-                |> List.foldr (++) []
-    in
-    points
-
-
-firstSelected : Area -> Board -> Board
-firstSelected area board =
-    let
-        selectablePoints =
-            board
-                |> List.foldr (++) []
-                |> List.foldl
-                    (\cell points ->
-                        let
-                            p =
-                                cell.point
-
-                            pointArea =
-                                case area of
-                                    One ->
-                                        p
-
-                                    Two ->
-                                        { p | x = p.x + 1 }
-
-                                    Four ->
-                                        { p | x = p.x + 1, y = p.y + 1 }
-
-                                    Eight ->
-                                        { p | x = p.x + 1, y = p.y + 3 }
-                        in
-                        if List.isEmpty points && (not <| spiceInside cell.point pointArea board) then
-                            pointsFromDiagnal cell.point pointArea
-
-                        else
-                            points
-                    )
-                    []
-    in
-    selectablePoints
-        |> List.foldr (\p b -> b |> set p Selected) board
-
-
 type Msg
     = FetchedValues (Result Http.Error (List (List String)))
     | CloseModal
-    | SelectSpice Spice
+    | SelectSpice Board.Spice
     | AddSpice
     | ConfirmSpice
-    | ChangeArea Area
+    | ChangeArea Board.Area
     | RefreshBoard
-    | OpenDeleteModal Spice
-    | DeleteSpice Spice
+    | OpenDeleteModal Board.Spice
+    | DeleteSpice Board.Spice
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -292,7 +100,7 @@ update msg model =
                                         |> List.Extra.getAt 6
                                         |> Maybe.map boolFromString
                                         |> Maybe.withDefault False
-                                , selectedArea = One
+                                , selectedArea = Board.One
                                 }
                             )
             in
@@ -310,7 +118,7 @@ update msg model =
                 , modal = Nothing
                 , board =
                     model.board
-                        |> firstSelected One
+                        |> Board.firstSelected Board.One
               }
             , Cmd.none
             )
@@ -328,8 +136,8 @@ update msg model =
                                     |> List.map
                                         (List.map
                                             (\cell ->
-                                                if cell.status == Selected then
-                                                    { cell | status = SpiceSelected spice }
+                                                if cell.status == Board.Selected then
+                                                    { cell | status = Board.SpiceSelected spice }
 
                                                 else
                                                     cell
@@ -345,15 +153,15 @@ update msg model =
             ( { model
                 | board =
                     model.board
-                        |> removeSelected
-                        |> firstSelected area
+                        |> Board.removeSelected
+                        |> Board.firstSelected area
                 , selectedSpice = model.selectedSpice |> Maybe.map (\s -> { s | selectedArea = area })
               }
             , Cmd.none
             )
 
         RefreshBoard ->
-            ( { model | board = initialBoard }, Cmd.none )
+            ( { model | board = Board.initialBoard }, Cmd.none )
 
         OpenDeleteModal spice ->
             ( { model | modal = Just <| DeleteModal spice }, Cmd.none )
@@ -365,9 +173,9 @@ update msg model =
                         (List.map
                             (\cell ->
                                 case cell.status of
-                                    SpiceSelected s ->
+                                    Board.SpiceSelected s ->
                                         if s == spice then
-                                            { cell | status = Blank }
+                                            { cell | status = Board.Blank }
 
                                         else
                                             cell
@@ -474,22 +282,22 @@ view { board, spices, modal, selectedSpice } =
                     case selectedSpice of
                         Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
                             [ if oneCell then
-                                button [ Events.onClick <| ChangeArea One ] (selectedArea == One) "1個"
+                                button [ Events.onClick <| ChangeArea Board.One ] (selectedArea == Board.One) "1個"
 
                               else
                                 disabledButton
                             , if twoCell then
-                                button [ Events.onClick <| ChangeArea Two ] (selectedArea == Two) "2個"
+                                button [ Events.onClick <| ChangeArea Board.Two ] (selectedArea == Board.Two) "2個"
 
                               else
                                 disabledButton
                             , if fourCell then
-                                button [ Events.onClick <| ChangeArea Four ] (selectedArea == Four) "4個"
+                                button [ Events.onClick <| ChangeArea Board.Four ] (selectedArea == Board.Four) "4個"
 
                               else
                                 disabledButton
                             , if eightCell then
-                                button [ Events.onClick <| ChangeArea Eight ] (selectedArea == Eight) "8個"
+                                button [ Events.onClick <| ChangeArea Board.Eight ] (selectedArea == Board.Eight) "8個"
 
                               else
                                 disabledButton
@@ -511,18 +319,18 @@ view { board, spices, modal, selectedSpice } =
                                                 ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
                                                  ]
                                                     ++ (case status of
-                                                            Selected ->
+                                                            Board.Selected ->
                                                                 [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
 
-                                                            Blank ->
+                                                            Board.Blank ->
                                                                 [ Attributes.style "background-color" "#fbfadfa3" ]
 
-                                                            SpiceSelected spice ->
+                                                            Board.SpiceSelected spice ->
                                                                 [ Events.onClick <| OpenDeleteModal spice, Attributes.style "background-color" spice.color ]
                                                        )
                                                 )
                                                 [ case status of
-                                                    SpiceSelected { name } ->
+                                                    Board.SpiceSelected { name } ->
                                                         Html.text name
 
                                                     _ ->
@@ -545,7 +353,7 @@ view { board, spices, modal, selectedSpice } =
               case modal of
                 Just (DeleteModal spice) ->
                     modalView <|
-                        Html.div []
+                        Html.div [ joinClasses [ "shadow-b" ] ]
                             [ Html.div [ joinClasses [ "text-size-body", "mb-3" ] ] [ Html.text "選択したスパイスを解除しますか？" ]
                             , Html.div [ joinClasses [ "text-size-caption", "mb-1", "text-black55" ] ] [ Html.text "選択中のスパイス:" ]
                             , Html.div [ joinClasses [ "text-size-caption", "mb-3", "text-black90", "font-bold" ] ] [ Html.text spice.name ]
