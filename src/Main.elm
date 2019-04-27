@@ -186,7 +186,7 @@ view { board, spices, modal, selectedSpice } =
             ]
             [ Html.div [ joinClasses [ "flex-1", "overflow-auto" ] ]
                 [ Html.div [ joinClasses [ "flex", "items-center", "mb-2" ] ]
-                    [ Html.div [ joinClasses [ "flex-1", "text-size-h4", "font-secondary" ] ] [ Html.text "Spice Blending Puzzle" ]
+                    [ Html.div [ joinClasses [ "flex-1", "text-size-h5", "font-secondary", "font-bold" ] ] [ Html.text "Spice Blending Puzzle" ]
                     , Html.button
                         [ Events.onClick RefreshBoard
                         , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black55", "text-size-small", "py-1", "px-2" ]
@@ -197,7 +197,7 @@ view { board, spices, modal, selectedSpice } =
                 , Html.div [ joinClasses [ "flex", "items-center", "mb-3" ] ]
                     [ Html.button
                         [ Events.onClick AddSpice
-                        , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black", "text-size-small", "px-3", "py-2" ]
+                        , joinClasses [ "border", "border-black50", "rounded", "shadow-a", "text-size-small", "px-3", "py-2" ]
                         ]
                         [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
                     , case selectedSpice of
@@ -289,7 +289,7 @@ view { board, spices, modal, selectedSpice } =
                                 ([ Attributes.style "grid-row" ((row |> Tuple.first |> String.fromInt) ++ "/" ++ (row |> Tuple.second |> String.fromInt))
                                  , Attributes.style "grid-column" ((col |> Tuple.first |> String.fromInt) ++ "/" ++ (col |> Tuple.second |> String.fromInt))
                                  , joinClasses <|
-                                    [ "border", "border-white", "text-size-caption", "flex", "justify-center", "items-center" ]
+                                    [ "border", "border-white", "text-size-caption", "font-bold", "flex", "justify-center", "items-center" ]
                                         ++ (case status of
                                                 Board.Selected ->
                                                     [ "z-10", "shadow-b" ]

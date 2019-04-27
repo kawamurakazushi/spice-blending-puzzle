@@ -62,7 +62,7 @@ module.exports = {
   fonts: {
     sans: ["'M PLUS 1p'", "system-ui", "Ubuntu", "sans-serif", "Hiragino Sans"],
     secondary: [
-      "'Patrick Hand SC'",
+      "'Inconsolata'",
       "'M PLUS 1p'",
       "system-ui",
       "Ubuntu",
@@ -83,7 +83,7 @@ module.exports = {
   },
   fontWeights: {
     regular: 300,
-    bold: 500
+    bold: 600
   },
   leading: {
     h1: "122px",
