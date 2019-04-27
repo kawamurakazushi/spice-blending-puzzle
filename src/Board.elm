@@ -5,12 +5,14 @@ module Board exposing
     , Point
     , Spice
     , Status(..)
-    , firstSelected
+    , confirmSpice
     , include
     , initialBoard
-    , removeSelected
-    , spiceInside
+    , remove
+    , selected
     )
+
+import Utils
 
 
 type Area
@@ -45,180 +47,210 @@ type Status
 
 
 type alias Cell =
-    { point : Point
+    { row : ( Int, Int )
+    , col : ( Int, Int )
     , status : Status
     }
 
 
 type alias Board =
-    List (List Cell)
+    List Cell
 
 
 initialBoard : Board
 initialBoard =
-    List.range 1 4
+    let
+        a =
+            [ ( 1, 2 ), ( 2, 3 ), ( 3, 4 ), ( 4, 5 ) ]
+    in
+    a
         |> List.map
             (\y ->
-                List.range 1 4
-                    |> List.map
-                        (\x -> Cell (Point x y) Blank)
+                a
+                    |> List.reverse
+                    |> List.map (\x -> { row = x, col = y, status = Blank })
             )
+        |> List.foldl (++) []
 
 
-firstSelected : Area -> Board -> Board
-firstSelected area board =
+selected : Area -> Board -> Board
+selected area board =
     let
-        selectablePoints =
+        blanks =
             board
-                |> List.foldr (++) []
-                |> List.foldl
-                    (\cell points ->
-                        let
-                            p =
-                                cell.point
+                |> remove Selected
+                |> List.filter (\{ status } -> status == Blank)
+                |> List.sortBy (\cell -> cell.row |> Tuple.first)
+                |> List.sortBy (\cell -> cell.col |> Tuple.first)
+                |> List.reverse
 
-                            pointArea =
+        mCell =
+            blanks
+                |> List.foldl
+                    (\cell point ->
+                        let
+                            mergedCell =
                                 case area of
                                     One ->
-                                        p
+                                        cell
 
                                     Two ->
-                                        { p | x = p.x + 1 }
+                                        { cell
+                                            | col =
+                                                cell.col
+                                                    |> Tuple.mapSecond ((+) 1)
+                                        }
 
                                     Four ->
-                                        { p | x = p.x + 1, y = p.y + 1 }
+                                        { cell
+                                            | col =
+                                                cell.col
+                                                    |> Tuple.mapSecond ((+) 1)
+                                            , row =
+                                                cell.row
+                                                    |> Tuple.mapSecond ((+) 1)
+                                        }
 
                                     Eight ->
-                                        { p | x = p.x + 1, y = p.y + 3 }
+                                        { cell
+                                            | col =
+                                                cell.col
+                                                    |> Tuple.mapSecond ((+) 1)
+                                            , row =
+                                                cell.row
+                                                    |> Tuple.mapSecond ((+) 3)
+                                        }
                         in
-                        if List.isEmpty points && pointArea.x <= 4 && pointArea.y <= 4 && (not <| spiceInside cell.point pointArea board) then
-                            pointsFromDiagnal cell.point pointArea
+                        if cells mergedCell |> List.all (Utils.flip List.member blanks) then
+                            Just mergedCell
 
                         else
-                            points
+                            point
                     )
-                    []
+                    Nothing
     in
-    selectablePoints
-        |> List.foldr (\p b -> b |> set p Selected) board
+    case mCell of
+        Just cell ->
+            board
+                |> remove Selected
+                |> removeCells (cells cell)
+                |> (++) [ { cell | status = Selected } ]
+
+        Nothing ->
+            board
 
 
-pointsFromDiagnal : Point -> Point -> List Point
-pointsFromDiagnal startPoint endPoint =
+cells : Cell -> List Cell
+cells cell =
     let
-        range : Int -> Int -> List Int
-        range a b =
-            if a > b then
-                List.range b a
+        ( minRow, maxRow ) =
+            cell.row
 
-            else
-                List.range a b
+        ( minCol, maxCol ) =
+            cell.col
 
-        xDiff =
-            endPoint.x - startPoint.x
+        rangeRow =
+            List.range minRow (maxRow - 1) |> List.map (\a -> ( a, a + 1 ))
 
-        yDiff =
-            endPoint.y - startPoint.y
-
-        points : List Point
-        points =
-            range 0 xDiff
-                |> List.map
-                    (\x ->
-                        range 0 yDiff
-                            |> List.map (\y -> Point (startPoint.x + x) (startPoint.y + y))
-                    )
-                |> List.foldr (++) []
+        rangeCol =
+            List.range minCol (maxCol - 1) |> List.map (\a -> ( a, a + 1 ))
     in
-    points
+    rangeRow
+        |> List.map
+            (\y ->
+                rangeCol
+                    |> List.map (\x -> { row = y, col = x, status = cell.status })
+            )
+        |> List.foldr (++) []
 
 
-spiceInside : Point -> Point -> Board -> Bool
-spiceInside startPoint endPoint =
+removeCells : List Cell -> Board -> Board
+removeCells cellList board =
+    List.foldl (\cell b -> b |> List.filter ((/=) cell)) board cellList
+
+
+split : Cell -> Board -> Board
+split cell board =
+    board |> removeCells [ cell ] |> (++) (cells cell)
+
+
+merge : Cell -> Cell -> Board -> Board
+merge from to board =
     let
-        between : Int -> Int -> Int -> Bool
-        between a b value =
-            if a >= value && value >= b then
-                True
+        ( minFromRow, maxFromRow ) =
+            from.row
 
-            else if b >= value && value >= a then
-                True
+        ( minFromCol, maxFromCol ) =
+            from.col
 
-            else
-                False
+        ( minToRow, maxToRow ) =
+            to.row
+
+        ( minToCol, maxToCol ) =
+            to.col
+
+        mergedRow =
+            ( min (Tuple.first from.row) (Tuple.first to.row), max (Tuple.second to.row) (Tuple.second to.row) )
+
+        mergedCol =
+            ( min (Tuple.first from.col) (Tuple.first to.col), max (Tuple.second from.col) (Tuple.second to.col) )
+
+        mergedCell =
+            { row = mergedRow, col = mergedCol, status = from.status }
+
+        a =
+            board
+                |> removeCells (cells mergedCell)
+                |> (++) [ mergedCell ]
     in
-    List.foldr (++) []
-        >> List.foldl
-            (\cell inside ->
-                inside
-                    || (case cell.status of
-                            SpiceSelected _ ->
-                                between startPoint.x endPoint.x cell.point.x
-                                    && between startPoint.y endPoint.y cell.point.y
-
-                            _ ->
-                                inside
-                       )
-            )
-            False
+    board
 
 
-set : Point -> Status -> Board -> Board
-set point status =
-    List.map
-        (List.map
-            (\cell ->
-                if cell.point == point then
-                    { cell | status = status }
-
-                else
-                    cell
-            )
-        )
-
-
-get : Point -> Board -> Maybe Status
-get point =
-    List.foldr (++) []
-        >> List.foldl
-            (\cell status ->
-                if cell.point == point then
-                    Just cell.status
-
-                else
-                    status
-            )
-            Nothing
-
-
-removeSelected : Board -> Board
-removeSelected =
-    List.map
-        (List.map
+confirmSpice : Spice -> Board -> Board
+confirmSpice spice board =
+    board
+        |> List.map
             (\cell ->
                 if cell.status == Selected then
-                    { cell | status = Blank }
+                    { cell | status = SpiceSelected spice }
 
                 else
                     cell
             )
-        )
+
+
+remove : Status -> Board -> Board
+remove status board =
+    let
+        mCell =
+            board
+                |> List.filter
+                    (\c -> c.status == status)
+                |> List.head
+    in
+    case mCell of
+        Just cell ->
+            board
+                |> removeCells [ cell ]
+                |> (++) (cells { cell | status = Blank })
+
+        Nothing ->
+            board
 
 
 include : Spice -> Board -> Bool
 include spice =
-    List.foldr (++) []
-        >> List.foldl
-            (\cell b ->
-                case cell.status of
-                    SpiceSelected s ->
-                        if s.id == spice.id then
-                            True
+    List.foldl
+        (\cell b ->
+            case cell.status of
+                SpiceSelected s ->
+                    if s.id == spice.id then
+                        True
 
-                        else
-                            b
-
-                    _ ->
+                    else
                         b
-            )
-            False
+
+                _ ->
+                    b
+        )
+        False
