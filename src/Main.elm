@@ -118,7 +118,7 @@ update msg model =
                 , modal = Nothing
                 , board =
                     model.board
-                        |> Board.firstSelected Board.One
+                        |> Board.selected Board.One
               }
             , Cmd.none
             )
@@ -131,18 +131,7 @@ update msg model =
                 |> Maybe.map
                     (\spice ->
                         ( { model
-                            | board =
-                                model.board
-                                    |> List.map
-                                        (List.map
-                                            (\cell ->
-                                                if cell.status == Board.Selected then
-                                                    { cell | status = Board.SpiceSelected spice }
-
-                                                else
-                                                    cell
-                                            )
-                                        )
+                            | board = model.board |> Board.confirmSpice spice
                             , selectedSpice = Nothing
                           }
                         , Cmd.none
@@ -154,8 +143,7 @@ update msg model =
             ( { model
                 | board =
                     model.board
-                        |> Board.removeSelected
-                        |> Board.firstSelected area
+                        |> Board.selected area
                 , selectedSpice = model.selectedSpice |> Maybe.map (\s -> { s | selectedArea = area })
               }
             , Cmd.none
@@ -169,23 +157,7 @@ update msg model =
 
         DeleteSpice spice ->
             ( { model
-                | board =
-                    List.map
-                        (List.map
-                            (\cell ->
-                                case cell.status of
-                                    Board.SpiceSelected s ->
-                                        if s == spice then
-                                            { cell | status = Board.Blank }
-
-                                        else
-                                            cell
-
-                                    _ ->
-                                        cell
-                            )
-                        )
-                        model.board
+                | board = Board.remove (Board.SpiceSelected spice) model.board
                 , modal = Nothing
               }
             , Cmd.none
@@ -308,36 +280,46 @@ view { board, spices, modal, selectedSpice } =
                             List.repeat 4 disabledButton
                 ]
             , Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "3. 場所を決定してください" ]
-            , Html.div [ joinClasses [ "flex", "flex-col", "items-center" ] ]
+            , Html.div [ Attributes.style "display" "grid", Attributes.style "grid-template-rows" "92px 92px 92px 92px", Attributes.style "grid-template-columns" "1fr 1fr 1fr 1fr " ] <|
                 (board
                     |> List.map
-                        (\line ->
-                            Html.div [ joinClasses [ "flex", "w-full" ] ] <|
-                                (line
-                                    |> List.map
-                                        (\{ status, point } ->
-                                            Html.div
-                                                ([ joinClasses [ "box", "text-size-caption", "flex", "justify-center", "items-center", "border-r", "border-b", "border-white" ]
-                                                 ]
-                                                    ++ (case status of
-                                                            Board.Selected ->
-                                                                [ Events.onClick ConfirmSpice, Attributes.style "background-color" "orange" ]
+                        (\{ row, col, status } ->
+                            Html.div
+                                ([ Attributes.style "grid-row" ((row |> Tuple.first |> String.fromInt) ++ "/" ++ (row |> Tuple.second |> String.fromInt))
+                                 , Attributes.style "grid-column" ((col |> Tuple.first |> String.fromInt) ++ "/" ++ (col |> Tuple.second |> String.fromInt))
+                                 , joinClasses <|
+                                    [ "border", "border-white", "text-size-caption", "flex", "justify-center", "items-center" ]
+                                        ++ (case status of
+                                                Board.Selected ->
+                                                    [ "bg-warning", "shadow-b" ]
 
-                                                            Board.Blank ->
-                                                                [ Attributes.style "background-color" "#fbfadfa3" ]
+                                                Board.SpiceSelected _ ->
+                                                    [ "" ]
 
-                                                            Board.SpiceSelected spice ->
-                                                                [ Events.onClick <| OpenDeleteModal spice, Attributes.style "background-color" spice.color ]
-                                                       )
-                                                )
-                                                [ case status of
-                                                    Board.SpiceSelected { name } ->
-                                                        Html.text name
+                                                Board.Blank ->
+                                                    [ "bg-black10" ]
+                                           )
+                                 ]
+                                    ++ (case status of
+                                            Board.Selected ->
+                                                [ Events.onClick <| ConfirmSpice ]
 
-                                                    _ ->
-                                                        Html.text ""
-                                                ]
-                                        )
+                                            Board.SpiceSelected spice ->
+                                                [ Attributes.style "background-color" spice.color, Events.onClick <| OpenDeleteModal spice ]
+
+                                            _ ->
+                                                []
+                                       )
+                                )
+                                (case status of
+                                    Board.Selected ->
+                                        [ Html.text "" ]
+
+                                    Board.SpiceSelected spice ->
+                                        [ Html.text spice.name ]
+
+                                    _ ->
+                                        [ Html.text "" ]
                                 )
                         )
                 )
