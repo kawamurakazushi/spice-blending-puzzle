@@ -82,40 +82,51 @@ selected area board =
         mCell =
             blanks
                 |> List.foldl
-                    (\cell point ->
-                        let
-                            mergedCell =
-                                case area of
+                    (\cell mergedCells ->
+                        mergedCells
+                            ++ (case area of
                                     One ->
-                                        cell
+                                        [ cell ]
 
                                     Two ->
-                                        { cell
+                                        [ { cell
+                                            | row =
+                                                cell.row
+                                                    |> Tuple.mapSecond ((+) 1)
+                                          }
+                                        , { cell
                                             | col =
                                                 cell.col
                                                     |> Tuple.mapSecond ((+) 1)
-                                        }
+                                          }
+                                        ]
 
                                     Four ->
-                                        { cell
+                                        [ { cell
                                             | col =
                                                 cell.col
                                                     |> Tuple.mapSecond ((+) 1)
                                             , row =
                                                 cell.row
                                                     |> Tuple.mapSecond ((+) 1)
-                                        }
+                                          }
+                                        ]
 
                                     Eight ->
-                                        { cell
+                                        [ { cell
                                             | col =
                                                 cell.col
                                                     |> Tuple.mapSecond ((+) 1)
                                             , row =
                                                 cell.row
                                                     |> Tuple.mapSecond ((+) 3)
-                                        }
-                        in
+                                          }
+                                        ]
+                               )
+                    )
+                    []
+                |> List.foldl
+                    (\mergedCell point ->
                         if cells mergedCell |> List.all (Utils.flip List.member blanks) then
                             Just mergedCell
 
