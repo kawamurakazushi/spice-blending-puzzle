@@ -2,9 +2,10 @@ module Board exposing
     ( Area(..)
     , Board
     , Cell
-    , Point
     , Spice
     , Status(..)
+    , cells
+    , completed
     , confirmSpice
     , include
     , initialBoard
@@ -34,12 +35,6 @@ type alias Spice =
     }
 
 
-type alias Point =
-    { x : Int
-    , y : Int
-    }
-
-
 type Status
     = Selected
     | Blank
@@ -60,13 +55,13 @@ type alias Board =
 initialBoard : Board
 initialBoard =
     let
-        a =
-            [ ( 1, 2 ), ( 2, 3 ), ( 3, 4 ), ( 4, 5 ) ]
+        grid =
+            List.range 1 4 |> List.map (\i -> ( i, i + 1 ))
     in
-    a
+    grid
         |> List.map
             (\y ->
-                a
+                grid
                     |> List.reverse
                     |> List.map (\x -> { row = x, col = y, status = Blank })
             )
@@ -169,43 +164,6 @@ removeCells cellList board =
     List.foldl (\cell b -> b |> List.filter ((/=) cell)) board cellList
 
 
-split : Cell -> Board -> Board
-split cell board =
-    board |> removeCells [ cell ] |> (++) (cells cell)
-
-
-merge : Cell -> Cell -> Board -> Board
-merge from to board =
-    let
-        ( minFromRow, maxFromRow ) =
-            from.row
-
-        ( minFromCol, maxFromCol ) =
-            from.col
-
-        ( minToRow, maxToRow ) =
-            to.row
-
-        ( minToCol, maxToCol ) =
-            to.col
-
-        mergedRow =
-            ( min (Tuple.first from.row) (Tuple.first to.row), max (Tuple.second to.row) (Tuple.second to.row) )
-
-        mergedCol =
-            ( min (Tuple.first from.col) (Tuple.first to.col), max (Tuple.second from.col) (Tuple.second to.col) )
-
-        mergedCell =
-            { row = mergedRow, col = mergedCol, status = from.status }
-
-        a =
-            board
-                |> removeCells (cells mergedCell)
-                |> (++) [ mergedCell ]
-    in
-    board
-
-
 confirmSpice : Spice -> Board -> Board
 confirmSpice spice board =
     board
@@ -254,3 +212,16 @@ include spice =
                     b
         )
         False
+
+
+completed : Board -> Bool
+completed =
+    List.foldl
+        (\{ status } b ->
+            if status == Blank || status == Selected then
+                False
+
+            else
+                b
+        )
+        True

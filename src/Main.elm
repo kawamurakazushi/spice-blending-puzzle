@@ -172,28 +172,11 @@ joinClasses =
 
 view : Model -> Html.Html Msg
 view { board, spices, modal, selectedSpice } =
-    Html.div
-        [ joinClasses [ "flex", "justify-center" ] ]
-        [ Html.div
-            [ joinClasses
-                [ "max-w-content"
-                , "w-full"
-                , "flex"
-                , "flex-col"
-                , "justify-center"
-                , "p-3"
-                ]
-            ]
-            [ Html.div [ joinClasses [ "flex-1", "overflow-auto" ] ]
-                [ Html.div [ joinClasses [ "flex", "items-center", "mb-2" ] ]
-                    [ Html.div [ joinClasses [ "flex-1", "text-size-h5", "font-secondary", "font-bold" ] ] [ Html.text "Spice Blending Puzzle" ]
-                    , Html.button
-                        [ Events.onClick RefreshBoard
-                        , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black55", "text-size-small", "py-1", "px-2" ]
-                        ]
-                        [ Html.i [ Attributes.class "fa fa-redo-alt" ] [] ]
-                    ]
-                , Html.div [ joinClasses [ "text-size-caption", "text-black55", "my-2" ] ] [ Html.text "1. スパイスを選択してください" ]
+    let
+        questionsView : Html.Html Msg
+        questionsView =
+            Html.div []
+                [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "my-2" ] ] [ Html.text "1. スパイスを選択してください" ]
                 , Html.div [ joinClasses [ "flex", "items-center", "mb-3" ] ]
                     [ Html.button
                         [ Events.onClick AddSpice
@@ -209,79 +192,82 @@ view { board, spices, modal, selectedSpice } =
                         Nothing ->
                             Html.text ""
                     ]
+                , let
+                    button attributes active text =
+                        let
+                            c =
+                                if active then
+                                    [ "border-primary", "text-black90" ]
+
+                                else
+                                    [ "text-black10" ]
+                        in
+                        Html.button (attributes ++ [ joinClasses ([ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2" ] ++ c) ])
+                            [ Html.div [ joinClasses [ "flex", "justify-center" ] ]
+                                [ if active then
+                                    Html.i [ joinClasses [ "fa", "fa-check-circle", "text-primary", "text-size-small" ] ] []
+
+                                  else
+                                    Html.i [ joinClasses [ "fa", "fa-circle" ] ] []
+                                ]
+                            , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text text ]
+                            ]
+
+                    disabledButton =
+                        Html.div
+                            [ joinClasses
+                                [ "flex-1"
+                                , "border"
+                                , "rounded"
+                                , "mx-2"
+                                , "shadow-a"
+                                , "p-2"
+                                , "bg-black10"
+                                , "text-black55"
+                                ]
+                            ]
+                            [ Html.div [ joinClasses [ "flex", "justify-center" ] ]
+                                [ Html.div [ joinClasses [ "text-size-small" ] ] [ Html.text "\u{3000}" ]
+                                ]
+                            , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text "\u{3000}" ]
+                            ]
+                  in
+                  Html.div [ joinClasses [ "mb-3" ] ]
+                    [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
+                    , Html.div [ joinClasses [ "flex" ] ] <|
+                        case selectedSpice of
+                            Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
+                                [ if oneCell then
+                                    button [ Events.onClick <| ChangeArea Board.One ] (selectedArea == Board.One) "1個"
+
+                                  else
+                                    disabledButton
+                                , if twoCell then
+                                    button [ Events.onClick <| ChangeArea Board.Two ] (selectedArea == Board.Two) "2個"
+
+                                  else
+                                    disabledButton
+                                , if fourCell then
+                                    button [ Events.onClick <| ChangeArea Board.Four ] (selectedArea == Board.Four) "4個"
+
+                                  else
+                                    disabledButton
+                                , if eightCell then
+                                    button [ Events.onClick <| ChangeArea Board.Eight ] (selectedArea == Board.Eight) "8個"
+
+                                  else
+                                    disabledButton
+                                ]
+
+                            Nothing ->
+                                List.repeat 4 disabledButton
+                    ]
+                , Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "3. 場所を決定してください" ]
                 ]
-            , let
-                button attributes active text =
-                    let
-                        c =
-                            if active then
-                                [ "border-primary", "text-black90" ]
 
-                            else
-                                [ "text-black10" ]
-                    in
-                    Html.button (attributes ++ [ joinClasses ([ "flex-1", "border", "rounded", "mx-2", "shadow-a", "p-2" ] ++ c) ])
-                        [ Html.div [ joinClasses [ "flex", "justify-center" ] ]
-                            [ if active then
-                                Html.i [ joinClasses [ "fa", "fa-check-circle", "text-primary", "text-size-small" ] ] []
-
-                              else
-                                Html.i [ joinClasses [ "fa", "fa-circle" ] ] []
-                            ]
-                        , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text text ]
-                        ]
-
-                disabledButton =
-                    Html.div
-                        [ joinClasses
-                            [ "flex-1"
-                            , "border"
-                            , "rounded"
-                            , "mx-2"
-                            , "shadow-a"
-                            , "p-2"
-                            , "bg-black10"
-                            , "text-black55"
-                            ]
-                        ]
-                        [ Html.div [ joinClasses [ "flex", "justify-center" ] ]
-                            [ Html.div [ joinClasses [ "text-size-small" ] ] [ Html.text "\u{3000}" ]
-                            ]
-                        , Html.div [ joinClasses [ "text-size-caption", "mt-1" ] ] [ Html.text "\u{3000}" ]
-                        ]
-              in
-              Html.div [ joinClasses [ "mb-3" ] ]
-                [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
-                , Html.div [ joinClasses [ "flex" ] ] <|
-                    case selectedSpice of
-                        Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
-                            [ if oneCell then
-                                button [ Events.onClick <| ChangeArea Board.One ] (selectedArea == Board.One) "1個"
-
-                              else
-                                disabledButton
-                            , if twoCell then
-                                button [ Events.onClick <| ChangeArea Board.Two ] (selectedArea == Board.Two) "2個"
-
-                              else
-                                disabledButton
-                            , if fourCell then
-                                button [ Events.onClick <| ChangeArea Board.Four ] (selectedArea == Board.Four) "4個"
-
-                              else
-                                disabledButton
-                            , if eightCell then
-                                button [ Events.onClick <| ChangeArea Board.Eight ] (selectedArea == Board.Eight) "8個"
-
-                              else
-                                disabledButton
-                            ]
-
-                        Nothing ->
-                            List.repeat 4 disabledButton
-                ]
-            , Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "3. 場所を決定してください" ]
-            , Html.div [ Attributes.style "display" "grid", Attributes.style "grid-template-rows" "92px 92px 92px 92px", Attributes.style "grid-template-columns" "1fr 1fr 1fr 1fr " ] <|
+        puzzleView : Html.Html Msg
+        puzzleView =
+            Html.div [ Attributes.style "display" "grid", Attributes.style "grid-template-rows" "92px 92px 92px 92px", Attributes.style "grid-template-columns" "1fr 1fr 1fr 1fr " ] <|
                 (board
                     |> List.map
                         (\{ row, col, status } ->
@@ -326,6 +312,57 @@ view { board, spices, modal, selectedSpice } =
                                 )
                         )
                 )
+    in
+    Html.div
+        [ joinClasses [ "flex", "justify-center" ] ]
+        [ Html.div
+            [ joinClasses
+                [ "max-w-content"
+                , "w-full"
+                , "flex"
+                , "flex-col"
+                , "justify-center"
+                , "p-3"
+                ]
+            ]
+            [ Html.div [ joinClasses [ "flex", "items-center", "mb-2" ] ]
+                [ Html.div [ joinClasses [ "flex-1", "text-size-h5", "font-secondary", "font-bold" ] ] [ Html.text "Spice Blending Puzzle" ]
+                , Html.button
+                    [ Events.onClick RefreshBoard
+                    , joinClasses [ "border", "border-black55", "rounded", "shadow-a", "text-black55", "text-size-small", "py-1", "px-2" ]
+                    ]
+                    [ Html.i [ Attributes.class "fa fa-redo-alt" ] [] ]
+                ]
+            , if Board.completed board then
+                Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
+                    [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "オリジナルスパイスブレンド" ] ]
+
+              else
+                questionsView
+            , puzzleView
+            , if Board.completed board then
+                Html.div []
+                    [ Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
+                        [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "レシピ (4人分)" ] ]
+                    , Html.div [ Attributes.style "display" "grid", Attributes.style "grid-template-columns" "1fr 100px" ]
+                        (board
+                            |> List.map
+                                (\cell ->
+                                    case cell.status of
+                                        Board.SpiceSelected spice ->
+                                            [ Html.div [ joinClasses [ "my-1", "text-size-small" ] ] [ Html.text spice.name ]
+                                            , Html.div [ joinClasses [ "my-1", "text-size-small" ] ] [ Html.text <| "小さじ " ++ (cell |> Board.cells |> List.length |> toFloat |> (*) 0.5 |> String.fromFloat) ]
+                                            ]
+
+                                        _ ->
+                                            [ Html.div [] [] ]
+                                )
+                            |> List.foldl (++) []
+                        )
+                    ]
+
+              else
+                Html.div [] []
             , let
                 modalView body =
                     Html.div [ joinClasses [ "fixed", "pin", "bg-white55", "flex", "justify-center", "items-center", "z-20" ] ]
