@@ -5,53 +5,49 @@ import Html
 import Html.Attributes as Attributes
 import Http
 import Json.Decode as Decode
+import Recipe
+import Spice
 import Url
 import Url.Builder
 
 
-type alias Model =
-    { recipe : Maybe Recipe
+type alias Data =
+    { recipe : Recipe.Recipe
+    , spices : List Spice.Spice
     }
 
 
-type alias Recipe =
-    { id : String
-    , comment : String
-    , created : String
-    , puzzle : String
+type alias Model =
+    { data : Maybe Data
     }
 
 
 init : String -> String -> ( Model, Cmd Msg )
 init hash apiKey =
-    let
-        decoder : Decode.Decoder Recipe
-        decoder =
-            Decode.map4 Recipe
-                (Decode.field "id" Decode.string)
-                (Decode.field "comment" Decode.string)
-                (Decode.field "created" Decode.string)
-                (Decode.field "puzzle" Decode.string)
-    in
-    ( { recipe = Nothing }
+    ( { data = Nothing }
     , Http.get
         { url = Api.url ++ Url.Builder.toQuery [ Url.Builder.string "resource" "recipes", Url.Builder.string "hash" hash ]
-        , expect = Http.expectJson FetchedRecipe decoder
+        , expect =
+            Http.expectJson FetchedData
+                (Decode.map2 Data
+                    (Decode.field "recipe" Recipe.decoder)
+                    (Decode.field "spices" (Decode.list Spice.decoder))
+                )
         }
     )
 
 
 type Msg
-    = FetchedRecipe (Result Http.Error Recipe)
+    = FetchedData (Result Http.Error Data)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FetchedRecipe (Ok recipe) ->
-            ( { model | recipe = Just recipe }, Cmd.none )
+        FetchedData (Ok data) ->
+            ( { model | data = Just data }, Cmd.none )
 
-        FetchedRecipe (Err _) ->
+        FetchedData (Err _) ->
             ( model, Cmd.none )
 
 
@@ -63,12 +59,12 @@ view model =
             , Html.div [ Attributes.class "text-size-caption text-black50 mx-2" ] [ Html.text "/" ]
             , Html.div [ Attributes.class "text-size-caption text-black50 font-bold" ] [ Html.text "詳細" ]
             ]
-        , case model.recipe of
+        , case model.data of
             Nothing ->
                 Html.div [ Attributes.class "flex justify-center my-2" ]
                     [ Html.div [ Attributes.class "spinner-loader" ] []
                     ]
 
-            Just recipe ->
-                Html.div [] [ Html.text recipe.comment ]
+            Just data ->
+                Html.div [] [ Html.text data.recipe.comment ]
         ]
