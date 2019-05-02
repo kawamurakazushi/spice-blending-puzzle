@@ -10,24 +10,15 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import List.Extra
+import Spice
 import Url
 import Url.Builder
+import View.Recipe as Recipe
 
 
 type Modal
     = SpiceModal
     | DeleteModal Board.Spice
-
-
-type alias Spice =
-    { id : Int
-    , spiceName : String
-    , color : String
-    , oneSquare : Int
-    , twoSquare : Int
-    , fourSquare : Int
-    , eightSquare : Int
-    }
 
 
 type alias Model =
@@ -45,18 +36,6 @@ type alias Model =
 
 init : Nav.Key -> String -> ( Model, Cmd Msg )
 init key apiKey =
-    let
-        decoder : Decode.Decoder Spice
-        decoder =
-            Decode.map7 Spice
-                (Decode.field "id" Decode.int)
-                (Decode.field "spiceName" Decode.string)
-                (Decode.field "color" Decode.string)
-                (Decode.field "oneSquare" Decode.int)
-                (Decode.field "twoSquare" Decode.int)
-                (Decode.field "fourSquare" Decode.int)
-                (Decode.field "eightSquare" Decode.int)
-    in
     ( { board = Board.initialBoard
       , spices = []
       , modal = Nothing
@@ -67,13 +46,13 @@ init key apiKey =
       }
     , Http.get
         { url = Api.url ++ Url.Builder.toQuery [ Url.Builder.string "resource" "spices" ]
-        , expect = Http.expectJson FetchedValues (Decode.list decoder)
+        , expect = Http.expectJson FetchedValues (Decode.list Spice.decoder)
         }
     )
 
 
 type Msg
-    = FetchedValues (Result Http.Error (List Spice))
+    = FetchedValues (Result Http.Error (List Spice.Spice))
     | CloseModal
     | SelectSpice Board.Spice
     | AddSpice
@@ -404,25 +383,7 @@ view { selectedSpice, board, modal, spices, comment, sending } =
             questionsView
         , puzzleView
         , if Board.completed board then
-            Html.div []
-                [ Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
-                    [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "レシピ (4人分)" ] ]
-                , Html.div [ Attributes.style "display" "grid", Attributes.style "grid-template-columns" "1fr 100px" ]
-                    (board
-                        |> List.map
-                            (\cell ->
-                                case cell.status of
-                                    Board.SpiceSelected spice ->
-                                        [ Html.div [ joinClasses [ "my-1", "text-size-small" ] ] [ Html.text spice.name ]
-                                        , Html.div [ joinClasses [ "my-1", "text-size-small" ] ] [ Html.text <| "小さじ " ++ (cell |> Board.cells |> List.length |> toFloat |> (*) 0.5 |> String.fromFloat) ]
-                                        ]
-
-                                    _ ->
-                                        []
-                            )
-                        |> List.foldl (++) []
-                    )
-                ]
+            Recipe.view board
 
           else
             Html.text ""
