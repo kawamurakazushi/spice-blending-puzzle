@@ -24,7 +24,7 @@ type Area
 
 
 type alias Spice =
-    { id : String
+    { id : Int
     , name : String
     , color : String
     , oneCell : Bool

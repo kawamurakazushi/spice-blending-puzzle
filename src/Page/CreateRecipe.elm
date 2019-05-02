@@ -1,12 +1,17 @@
 module Page.CreateRecipe exposing (Modal(..), Model, Msg(..), init, update, view)
 
+import Api
 import Board
+import Browser.Navigation as Nav
 import Html
 import Html.Attributes as Attributes
 import Html.Events as Events
 import Http
+import Json.Decode as Decode
+import Json.Encode as Encode
 import List.Extra
-import Spreadsheet
+import Url
+import Url.Builder
 
 
 type Modal
@@ -14,31 +19,61 @@ type Modal
     | DeleteModal Board.Spice
 
 
+type alias Spice =
+    { id : Int
+    , spiceName : String
+    , color : String
+    , oneSquare : Int
+    , twoSquare : Int
+    , fourSquare : Int
+    , eightSquare : Int
+    }
+
+
 type alias Model =
     { board : Board.Board
     , spices : List Board.Spice
     , modal : Maybe Modal
+
+    -- TODO: Remove selectedArea from Board.Spice
     , selectedSpice : Maybe Board.Spice
+    , comment : String
+    , sending : Bool
+    , key : Nav.Key
     }
 
 
-init : String -> ( Model, Cmd Msg )
-init apiKey =
+init : Nav.Key -> String -> ( Model, Cmd Msg )
+init key apiKey =
+    let
+        decoder : Decode.Decoder Spice
+        decoder =
+            Decode.map7 Spice
+                (Decode.field "id" Decode.int)
+                (Decode.field "spiceName" Decode.string)
+                (Decode.field "color" Decode.string)
+                (Decode.field "oneSquare" Decode.int)
+                (Decode.field "twoSquare" Decode.int)
+                (Decode.field "fourSquare" Decode.int)
+                (Decode.field "eightSquare" Decode.int)
+    in
     ( { board = Board.initialBoard
       , spices = []
       , modal = Nothing
       , selectedSpice = Nothing
+      , comment = ""
+      , sending = False
+      , key = key
       }
-    , Spreadsheet.getValues
-        FetchedValues
-        (Spreadsheet.Key apiKey)
-        (Spreadsheet.SpreadsheetId "1lnoOKBJ-bLpkRM9LNw0wVusbHzZdGgEX4Cok0lqbvRo")
-        (Spreadsheet.SheetName "spices")
+    , Http.get
+        { url = Api.url ++ Url.Builder.toQuery [ Url.Builder.string "resource" "spices" ]
+        , expect = Http.expectJson FetchedValues (Decode.list decoder)
+        }
     )
 
 
 type Msg
-    = FetchedValues (Result Http.Error (List (List String)))
+    = FetchedValues (Result Http.Error (List Spice))
     | CloseModal
     | SelectSpice Board.Spice
     | AddSpice
@@ -47,6 +82,9 @@ type Msg
     | RefreshBoard
     | OpenDeleteModal Board.Spice
     | DeleteSpice Board.Spice
+    | ShareRecipe
+    | SharedRecipe (Result Http.Error String)
+    | InputComment String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -54,57 +92,33 @@ update msg model =
     case msg of
         FetchedValues (Ok values) ->
             let
-                spices =
+                intToBool a =
+                    if a == 1 then
+                        True
+
+                    else
+                        False
+            in
+            ( { model
+                | spices =
                     values
                         |> List.map
-                            (\spice ->
-                                let
-                                    boolFromString b =
-                                        if b == "1" then
-                                            True
-
-                                        else
-                                            False
-                                in
-                                { id =
-                                    spice
-                                        |> List.Extra.getAt 0
-                                        |> Maybe.withDefault ""
-                                , name =
-                                    spice
-                                        |> List.Extra.getAt 1
-                                        |> Maybe.withDefault ""
-                                , color =
-                                    spice
-                                        |> List.Extra.getAt 2
-                                        |> Maybe.withDefault ""
-                                , oneCell =
-                                    spice
-                                        |> List.Extra.getAt 3
-                                        |> Maybe.map boolFromString
-                                        |> Maybe.withDefault False
-                                , twoCell =
-                                    spice
-                                        |> List.Extra.getAt 4
-                                        |> Maybe.map boolFromString
-                                        |> Maybe.withDefault False
-                                , fourCell =
-                                    spice
-                                        |> List.Extra.getAt 5
-                                        |> Maybe.map boolFromString
-                                        |> Maybe.withDefault False
-                                , eightCell =
-                                    spice
-                                        |> List.Extra.getAt 6
-                                        |> Maybe.map boolFromString
-                                        |> Maybe.withDefault False
+                            (\v ->
+                                { id = v.id
+                                , name = v.spiceName
+                                , color = v.color
+                                , oneCell = intToBool v.oneSquare
+                                , twoCell = intToBool v.twoSquare
+                                , fourCell = intToBool v.fourSquare
+                                , eightCell = intToBool v.eightSquare
                                 , selectedArea = Board.One
                                 }
                             )
-            in
-            ( { model | spices = spices }, Cmd.none )
+              }
+            , Cmd.none
+            )
 
-        FetchedValues (Err _) ->
+        FetchedValues (Err e) ->
             ( model, Cmd.none )
 
         CloseModal ->
@@ -161,6 +175,64 @@ update msg model =
             , Cmd.none
             )
 
+        ShareRecipe ->
+            let
+                decoder : Decode.Decoder String
+                decoder =
+                    Decode.map identity
+                        (Decode.field "message" Decode.string)
+
+                puzzle : Encode.Value
+                puzzle =
+                    model.board
+                        |> Encode.list
+                            (\cell ->
+                                let
+                                    ( colStart, colEnd ) =
+                                        cell.col
+
+                                    ( rowStart, rowEnd ) =
+                                        cell.row
+                                in
+                                case cell.status of
+                                    Board.SpiceSelected spice ->
+                                        Encode.object
+                                            [ ( "colStart", Encode.int colStart )
+                                            , ( "colEnd", Encode.int colEnd )
+                                            , ( "rowStart", Encode.int rowStart )
+                                            , ( "rowEnd", Encode.int rowEnd )
+                                            , ( "id", Encode.int spice.id )
+                                            ]
+
+                                    _ ->
+                                        Encode.object
+                                            [ ( "colStart", Encode.int colStart )
+                                            , ( "colEnd", Encode.int colEnd )
+                                            , ( "rowStart", Encode.int rowStart )
+                                            , ( "rowEnd", Encode.int rowEnd )
+                                            ]
+                            )
+
+                query =
+                    Url.Builder.toQuery [ Url.Builder.string "puzzle" (Encode.encode 0 puzzle), Url.Builder.string "comment" model.comment ]
+            in
+            ( { model | sending = True }
+            , Http.post
+                { url = Api.url ++ query
+                , body = Http.emptyBody
+                , expect = Http.expectJson SharedRecipe decoder
+                }
+            )
+
+        SharedRecipe (Ok _) ->
+            ( { model | sending = False }, Nav.pushUrl model.key "/recipes" )
+
+        SharedRecipe (Err _) ->
+            ( model, Cmd.none )
+
+        InputComment value ->
+            ( { model | comment = value }, Cmd.none )
+
 
 joinClasses : List String -> Html.Attribute msg
 joinClasses =
@@ -169,7 +241,7 @@ joinClasses =
 
 
 view : Model -> Html.Html Msg
-view { selectedSpice, board, modal, spices } =
+view { selectedSpice, board, modal, spices, comment, sending } =
     let
         questionsView : Html.Html Msg
         questionsView =
@@ -313,8 +385,20 @@ view { selectedSpice, board, modal, spices } =
     in
     Html.div []
         [ if Board.completed board then
-            Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
-                [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "オリジナルスパイスブレンド" ] ]
+            Html.div []
+                [ Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
+                    [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "コメント" ] ]
+                , Html.textarea
+                    [ Events.onInput InputComment
+                    , Attributes.class "w-full text-size-caption p-1"
+                    , Attributes.rows 4
+                    , Attributes.placeholder "例) タンドリーチキンに合うスパイスブレンド!"
+                    ]
+                    [ Html.text comment ]
+                , Html.div
+                    [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
+                    [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "オリジナルスパイスブレンド" ] ]
+                ]
 
           else
             questionsView
@@ -334,14 +418,31 @@ view { selectedSpice, board, modal, spices } =
                                         ]
 
                                     _ ->
-                                        [ Html.div [] [] ]
+                                        []
                             )
                         |> List.foldl (++) []
                     )
                 ]
 
           else
-            Html.div [] []
+            Html.text ""
+        , if Board.completed board then
+            Html.div [ Attributes.class "fixed w-full pin-b pin-x flex justify-center items-center bg-white p-2 text-size-body" ]
+                [ Html.button
+                    [ Attributes.disabled sending
+                    , Events.onClick ShareRecipe
+                    , Attributes.class "bg-primary w-full text-white font-bold py-3 px-5 shadow-b"
+                    ]
+                    [ if sending then
+                        Html.div [ Attributes.class "spinner-loader text-white" ] []
+
+                      else
+                        Html.text "みんなと共有する"
+                    ]
+                ]
+
+          else
+            Html.text ""
         , let
             modalView body =
                 Html.div [ joinClasses [ "fixed", "pin", "bg-white55", "flex", "justify-center", "items-center", "z-20" ] ]

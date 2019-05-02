@@ -13,7 +13,6 @@ import Page.CreateRecipe as CreateRecipe
 import Page.RecipeDetail as RecipeDetail
 import Page.RecipeList as RecipeList
 import Route
-import Spreadsheet
 import Url
 
 
@@ -31,26 +30,26 @@ type alias Model =
     }
 
 
-urlToPage : String -> Url.Url -> ( PageModel, Cmd Msg )
-urlToPage apiKey url =
+urlToPage : Nav.Key -> String -> Url.Url -> ( PageModel, Cmd Msg )
+urlToPage key apiKey url =
     case Route.fromUrl url of
         Just Route.RecipeList ->
-            RecipeList.init
+            RecipeList.init apiKey
                 |> Tuple.mapFirst RecipeListModel
                 |> Tuple.mapSecond (Cmd.map RecipeListMsg)
 
         Just (Route.RecipeDetail hash) ->
-            RecipeDetail.init
+            RecipeDetail.init hash apiKey
                 |> Tuple.mapFirst RecipeDetailModel
                 |> Tuple.mapSecond (Cmd.map RecipeDetailMsg)
 
         Just Route.CreateRecipe ->
-            CreateRecipe.init apiKey
+            CreateRecipe.init key apiKey
                 |> Tuple.mapFirst CreateRecipeModel
                 |> Tuple.mapSecond (Cmd.map CreateRecipeMsg)
 
         Nothing ->
-            CreateRecipe.init apiKey
+            CreateRecipe.init key apiKey
                 |> Tuple.mapFirst CreateRecipeModel
                 |> Tuple.mapSecond (Cmd.map CreateRecipeMsg)
 
@@ -59,7 +58,7 @@ init : String -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init apiKey url key =
     let
         ( page, cmd ) =
-            urlToPage apiKey url
+            urlToPage key apiKey url
     in
     ( { url = url
       , key = key
@@ -90,8 +89,12 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            ( { model | url = url }
-            , Cmd.none
+            let
+                ( page, cmd ) =
+                    urlToPage model.key model.apiKey url
+            in
+            ( { model | url = url, page = page }
+            , cmd
             )
 
         CreateRecipeMsg subMsg ->
@@ -156,6 +159,16 @@ view { page } =
                         [ Html.div [ Attributes.class "flex-1 text-size-h5 font-secondary font-bold" ] [ Html.text "Spice Blending Puzzle" ]
                         ]
                     , child
+                    , case page of
+                        CreateRecipeModel _ ->
+                            Html.text ""
+
+                        _ ->
+                            Html.a
+                                [ Attributes.href "/"
+                                , Attributes.class "no-underline w-box h-box rounded-full bg-primary fixed text-white pin-b pin-r m-5 shadow-c block flex flex-col items-center justify-center"
+                                ]
+                                [ Html.i [ Attributes.class "fa fa-plus text-size-h5" ] [] ]
                     ]
                 ]
     in
