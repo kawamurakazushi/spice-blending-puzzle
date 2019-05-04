@@ -10,8 +10,10 @@ module Board exposing
     , initialBoard
     , remove
     , selected
+    , toBoard
     )
 
+import Json.Decode as Decode
 import Spice
 import Utils
 
@@ -26,7 +28,7 @@ type Area
 type Status
     = Selected
     | Blank
-    | SpiceSelected Spice.Spice Area
+    | SpiceSelected Spice.Spice Area -- TODO: Remove Area
 
 
 type alias Cell =
@@ -38,6 +40,46 @@ type alias Cell =
 
 type alias Board =
     List Cell
+
+
+type alias SimpleBoard =
+    { colStart : Int
+    , colEnd : Int
+    , rowStart : Int
+    , rowEnd : Int
+    , id : Int
+    }
+
+
+toBoard : String -> List Spice.Spice -> Maybe Board
+toBoard b spices =
+    let
+        boardDecoder : Decode.Decoder (List SimpleBoard)
+        boardDecoder =
+            Decode.list <|
+                Decode.map5
+                    SimpleBoard
+                    (Decode.field "colStart" Decode.int)
+                    (Decode.field "colEnd" Decode.int)
+                    (Decode.field "rowStart" Decode.int)
+                    (Decode.field "rowEnd" Decode.int)
+                    (Decode.field "id" Decode.int)
+    in
+    Decode.decodeString boardDecoder b
+        |> Result.toMaybe
+        |> Maybe.map
+            (List.map
+                (\{ colStart, colEnd, rowStart, rowEnd, id } ->
+                    { row = ( rowStart, rowEnd )
+                    , col = ( colStart, colEnd )
+                    , status =
+                        spices
+                            |> Spice.byId id
+                            |> Maybe.map (Utils.flip SpiceSelected One)
+                            |> Maybe.withDefault Blank
+                    }
+                )
+            )
 
 
 initialBoard : Board

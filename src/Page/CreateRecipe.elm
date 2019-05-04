@@ -13,6 +13,7 @@ import List.Extra
 import Spice
 import Url
 import Url.Builder
+import View.Board
 import View.Recipe as Recipe
 
 
@@ -292,54 +293,6 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                     ]
                 , Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "3. 場所を決定してください" ]
                 ]
-
-        puzzleView : Html.Html Msg
-        puzzleView =
-            Html.div [ Attributes.style "display" "grid", Attributes.style "grid-template-rows" "92px 92px 92px 92px", Attributes.style "grid-template-columns" "1fr 1fr 1fr 1fr " ] <|
-                (board
-                    |> List.map
-                        (\{ row, col, status } ->
-                            Html.div
-                                ([ Attributes.style "grid-row" ((row |> Tuple.first |> String.fromInt) ++ "/" ++ (row |> Tuple.second |> String.fromInt))
-                                 , Attributes.style "grid-column" ((col |> Tuple.first |> String.fromInt) ++ "/" ++ (col |> Tuple.second |> String.fromInt))
-                                 , joinClasses <|
-                                    [ "border", "border-white", "text-size-caption", "font-bold", "flex", "justify-center", "items-center" ]
-                                        ++ (case status of
-                                                Board.Selected ->
-                                                    [ "z-10", "shadow-b" ]
-
-                                                Board.SpiceSelected _ _ ->
-                                                    [ "" ]
-
-                                                Board.Blank ->
-                                                    [ "bg-black10" ]
-                                           )
-                                 ]
-                                    ++ (case status of
-                                            Board.Selected ->
-                                                [ Attributes.style "outline" "3px solid oldlace"
-                                                , Events.onClick <| ConfirmSpice
-                                                ]
-
-                                            Board.SpiceSelected spice _ ->
-                                                [ Attributes.style "background-color" (spice.color ++ "70"), Events.onClick <| OpenDeleteModal spice ]
-
-                                            _ ->
-                                                []
-                                       )
-                                )
-                                (case status of
-                                    Board.Selected ->
-                                        [ Html.div [ joinClasses [ "rounded-full", "p-3", "shadow-a" ], Attributes.style "background-color" "oldlace" ] [ Html.text "決定" ] ]
-
-                                    Board.SpiceSelected spice _ ->
-                                        [ Html.text spice.name ]
-
-                                    _ ->
-                                        [ Html.text "" ]
-                                )
-                        )
-                )
     in
     Html.div []
         [ if Board.completed board then
@@ -360,7 +313,7 @@ view { selectedSpice, board, modal, spices, comment, sending } =
 
           else
             questionsView
-        , puzzleView
+        , View.Board.view (\c -> { c | confirmSpice = Just ConfirmSpice, openDeleteModal = Just OpenDeleteModal }) board
         , if Board.completed board then
             Recipe.view board
 

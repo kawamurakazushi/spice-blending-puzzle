@@ -1,4 +1,4 @@
-module Spice exposing (Spice, decoder)
+module Spice exposing (Spice, byId, decoder)
 
 import Json.Decode as Decode
 
@@ -12,6 +12,12 @@ type alias Spice =
     , canFour : Bool
     , canEight : Bool
     }
+
+
+byId : Int -> List Spice -> Maybe Spice
+byId id =
+    List.filter (\s -> s.id == id)
+        >> List.head
 
 
 decoder : Decode.Decoder Spice
