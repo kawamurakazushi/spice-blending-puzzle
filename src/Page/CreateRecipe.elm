@@ -1,4 +1,4 @@
-module Page.CreateRecipe exposing (Modal(..), Model, Msg(..), init, update, view)
+port module Page.CreateRecipe exposing (Modal(..), Model, Msg(..), init, update, view)
 
 import Api
 import Board
@@ -15,6 +15,9 @@ import Url
 import Url.Builder
 import View.Board
 import View.Recipe as Recipe
+
+
+port scrollToTop : () -> Cmd msg
 
 
 type Modal
@@ -138,7 +141,7 @@ update msg model =
 
         ShareRecipe ->
             if String.isEmpty model.comment then
-                ( { model | error = True }, Cmd.none )
+                ( { model | error = True }, scrollToTop () )
 
             else
                 let
