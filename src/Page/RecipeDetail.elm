@@ -71,7 +71,7 @@ view model =
             Just data ->
                 Html.div []
                     [ Html.div [ Attributes.class "py-2 text-size-small font-bold border-b border-black10 mb-2" ] [ Html.text "コメント" ]
-                    , Html.div [ Attributes.class "text-size-small mb-2" ] [ Html.text data.recipe.comment ]
+                    , Html.div [ Attributes.class "text-size-small mb-2 whitespace-pre-line" ] [ Html.text data.recipe.comment ]
                     , case Board.toBoard data.recipe.board data.spices of
                         Just b ->
                             Html.div []

@@ -57,7 +57,6 @@ view model =
         cardView recipe =
             Html.a [ Attributes.href <| "/recipes/" ++ recipe.id, Attributes.class "no-underline bg-table-grey px-4 py-3 my-3 shadow-a block" ]
                 [ Html.div [ Attributes.class "text-size-body truncate text-black90" ] [ Html.text recipe.comment ]
-                , Html.div [] [ Html.div [ Attributes.class "text-size-caption text-black55" ] [ Html.text "コリアンダー" ] ]
                 ]
     in
     Html.div []
