@@ -1,6 +1,5 @@
 module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
-import Board
 import Browser
 import Browser.Navigation as Nav
 import Html

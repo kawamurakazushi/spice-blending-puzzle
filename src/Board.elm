@@ -2,7 +2,6 @@ module Board exposing
     ( Area(..)
     , Board
     , Cell
-    , Spice
     , Status(..)
     , cells
     , completed
@@ -11,8 +10,11 @@ module Board exposing
     , initialBoard
     , remove
     , selected
+    , toBoard
     )
 
+import Json.Decode as Decode
+import Spice
 import Utils
 
 
@@ -23,22 +25,10 @@ type Area
     | Eight
 
 
-type alias Spice =
-    { id : Int
-    , name : String
-    , color : String
-    , oneCell : Bool
-    , twoCell : Bool
-    , fourCell : Bool
-    , eightCell : Bool
-    , selectedArea : Area
-    }
-
-
 type Status
     = Selected
     | Blank
-    | SpiceSelected Spice
+    | SpiceSelected Spice.Spice Area -- TODO: Remove Area
 
 
 type alias Cell =
@@ -50,6 +40,46 @@ type alias Cell =
 
 type alias Board =
     List Cell
+
+
+type alias SimpleBoard =
+    { colStart : Int
+    , colEnd : Int
+    , rowStart : Int
+    , rowEnd : Int
+    , id : Int
+    }
+
+
+toBoard : String -> List Spice.Spice -> Maybe Board
+toBoard b spices =
+    let
+        boardDecoder : Decode.Decoder (List SimpleBoard)
+        boardDecoder =
+            Decode.list <|
+                Decode.map5
+                    SimpleBoard
+                    (Decode.field "colStart" Decode.int)
+                    (Decode.field "colEnd" Decode.int)
+                    (Decode.field "rowStart" Decode.int)
+                    (Decode.field "rowEnd" Decode.int)
+                    (Decode.field "id" Decode.int)
+    in
+    Decode.decodeString boardDecoder b
+        |> Result.toMaybe
+        |> Maybe.map
+            (List.map
+                (\{ colStart, colEnd, rowStart, rowEnd, id } ->
+                    { row = ( rowStart, rowEnd )
+                    , col = ( colStart, colEnd )
+                    , status =
+                        spices
+                            |> Spice.byId id
+                            |> Maybe.map (Utils.flip SpiceSelected One)
+                            |> Maybe.withDefault Blank
+                    }
+                )
+            )
 
 
 initialBoard : Board
@@ -175,13 +205,13 @@ removeCells cellList board =
     List.foldl (\cell b -> b |> List.filter ((/=) cell)) board cellList
 
 
-confirmSpice : Spice -> Board -> Board
+confirmSpice : Spice.Spice -> Board -> Board
 confirmSpice spice board =
     board
         |> List.map
             (\cell ->
                 if cell.status == Selected then
-                    { cell | status = SpiceSelected spice }
+                    { cell | status = SpiceSelected spice One }
 
                 else
                     cell
@@ -207,12 +237,12 @@ remove status board =
             board
 
 
-include : Spice -> Board -> Bool
+include : Spice.Spice -> Board -> Bool
 include spice =
     List.foldl
         (\cell b ->
             case cell.status of
-                SpiceSelected s ->
+                SpiceSelected s _ ->
                     if s.id == spice.id then
                         True
 

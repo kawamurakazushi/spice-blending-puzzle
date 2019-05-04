@@ -1,6 +1,7 @@
 module Page.RecipeDetail exposing (Model, Msg(..), init, update, view)
 
 import Api
+import Board
 import Html
 import Html.Attributes as Attributes
 import Http
@@ -9,6 +10,8 @@ import Recipe
 import Spice
 import Url
 import Url.Builder
+import View.Board
+import View.Recipe
 
 
 type alias Data =
@@ -66,5 +69,18 @@ view model =
                     ]
 
             Just data ->
-                Html.div [] [ Html.text data.recipe.comment ]
+                Html.div []
+                    [ Html.div [ Attributes.class "py-2 text-size-small font-bold border-b border-black10 mb-2" ] [ Html.text "コメント" ]
+                    , Html.div [ Attributes.class "text-size-small mb-2" ] [ Html.text data.recipe.comment ]
+                    , case Board.toBoard data.recipe.board data.spices of
+                        Just b ->
+                            Html.div []
+                                [ Html.div [ Attributes.class "py-2 text-size-small font-bold border-b border-black10 mb-2" ] [ Html.text "オリジナルスパイスパズル" ]
+                                , View.Board.view identity b
+                                , View.Recipe.view b
+                                ]
+
+                        Nothing ->
+                            Html.text ""
+                    ]
         ]
