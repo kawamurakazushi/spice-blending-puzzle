@@ -152,7 +152,7 @@ view : Model -> Browser.Document Msg
 view { page } =
     let
         layout child =
-            Html.div [ Attributes.class "flex justify-center", Attributes.style "padding-bottom" "66px" ]
+            Html.div [ Attributes.class "flex justify-center", Attributes.style "padding-bottom" "100px" ]
                 [ Html.div [ Attributes.class "max-w-content w-full flex flex-col justify-center p-3" ]
                     [ Html.div [ Attributes.class "flex items-center mb-2" ]
                         [ Html.div [ Attributes.class "flex-1 text-size-h5 font-secondary font-bold" ] [ Html.text "Spice Blending Puzzle" ]

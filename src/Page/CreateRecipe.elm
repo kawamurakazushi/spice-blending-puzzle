@@ -30,6 +30,7 @@ type alias Model =
     , comment : String
     , sending : Bool
     , key : Nav.Key
+    , error : Bool
     }
 
 
@@ -42,6 +43,7 @@ init key apiKey =
       , comment = ""
       , sending = False
       , key = key
+      , error = False
       }
     , Http.get
         { url = Api.url ++ Url.Builder.toQuery [ Url.Builder.string "resource" "spices" ]
@@ -135,53 +137,57 @@ update msg model =
             )
 
         ShareRecipe ->
-            let
-                decoder : Decode.Decoder String
-                decoder =
-                    Decode.map identity
-                        (Decode.field "message" Decode.string)
+            if String.isEmpty model.comment then
+                ( { model | error = True }, Cmd.none )
 
-                puzzle : Encode.Value
-                puzzle =
-                    model.board
-                        |> Encode.list
-                            (\cell ->
-                                let
-                                    ( colStart, colEnd ) =
-                                        cell.col
+            else
+                let
+                    decoder : Decode.Decoder String
+                    decoder =
+                        Decode.map identity
+                            (Decode.field "message" Decode.string)
 
-                                    ( rowStart, rowEnd ) =
-                                        cell.row
-                                in
-                                case cell.status of
-                                    Board.SpiceSelected spice _ ->
-                                        Encode.object
-                                            [ ( "colStart", Encode.int colStart )
-                                            , ( "colEnd", Encode.int colEnd )
-                                            , ( "rowStart", Encode.int rowStart )
-                                            , ( "rowEnd", Encode.int rowEnd )
-                                            , ( "id", Encode.int spice.id )
-                                            ]
+                    puzzle : Encode.Value
+                    puzzle =
+                        model.board
+                            |> Encode.list
+                                (\cell ->
+                                    let
+                                        ( colStart, colEnd ) =
+                                            cell.col
 
-                                    _ ->
-                                        Encode.object
-                                            [ ( "colStart", Encode.int colStart )
-                                            , ( "colEnd", Encode.int colEnd )
-                                            , ( "rowStart", Encode.int rowStart )
-                                            , ( "rowEnd", Encode.int rowEnd )
-                                            ]
-                            )
+                                        ( rowStart, rowEnd ) =
+                                            cell.row
+                                    in
+                                    case cell.status of
+                                        Board.SpiceSelected spice _ ->
+                                            Encode.object
+                                                [ ( "colStart", Encode.int colStart )
+                                                , ( "colEnd", Encode.int colEnd )
+                                                , ( "rowStart", Encode.int rowStart )
+                                                , ( "rowEnd", Encode.int rowEnd )
+                                                , ( "id", Encode.int spice.id )
+                                                ]
 
-                query =
-                    Url.Builder.toQuery [ Url.Builder.string "puzzle" (Encode.encode 0 puzzle), Url.Builder.string "comment" model.comment ]
-            in
-            ( { model | sending = True }
-            , Http.post
-                { url = Api.url ++ query
-                , body = Http.emptyBody
-                , expect = Http.expectJson SharedRecipe decoder
-                }
-            )
+                                        _ ->
+                                            Encode.object
+                                                [ ( "colStart", Encode.int colStart )
+                                                , ( "colEnd", Encode.int colEnd )
+                                                , ( "rowStart", Encode.int rowStart )
+                                                , ( "rowEnd", Encode.int rowEnd )
+                                                ]
+                                )
+
+                    query =
+                        Url.Builder.toQuery [ Url.Builder.string "puzzle" (Encode.encode 0 puzzle), Url.Builder.string "comment" model.comment ]
+                in
+                ( { model | sending = True, error = False }
+                , Http.post
+                    { url = Api.url ++ query
+                    , body = Http.emptyBody
+                    , expect = Http.expectJson SharedRecipe decoder
+                    }
+                )
 
         SharedRecipe (Ok _) ->
             ( { model | sending = False }, Nav.pushUrl model.key "/recipes" )
@@ -200,7 +206,7 @@ joinClasses =
 
 
 view : Model -> Html.Html Msg
-view { selectedSpice, board, modal, spices, comment, sending } =
+view { selectedSpice, board, modal, spices, comment, sending, error } =
     let
         questionsView : Html.Html Msg
         questionsView =
@@ -303,7 +309,12 @@ view { selectedSpice, board, modal, spices, comment, sending } =
         , if Board.completed board then
             Html.div []
                 [ Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
-                    [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.text "コメント" ] ]
+                    [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.span [ Attributes.class "text-error mr-1" ] [ Html.text "*" ], Html.text "コメント (必須)" ] ]
+                , if error then
+                    Html.div [ Attributes.class "text-error text-size-caption my-2 font-bold " ] [ Html.text "共有するには、コメントは必須です。" ]
+
+                  else
+                    Html.text ""
                 , Html.textarea
                     [ Events.onInput InputComment
                     , Attributes.class "w-full text-size-caption p-2 border"
