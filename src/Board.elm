@@ -2,7 +2,6 @@ module Board exposing
     ( Area(..)
     , Board
     , Cell
-    , Spice
     , Status(..)
     , cells
     , completed
@@ -13,6 +12,7 @@ module Board exposing
     , selected
     )
 
+import Spice
 import Utils
 
 
@@ -23,22 +23,10 @@ type Area
     | Eight
 
 
-type alias Spice =
-    { id : Int
-    , name : String
-    , color : String
-    , oneCell : Bool
-    , twoCell : Bool
-    , fourCell : Bool
-    , eightCell : Bool
-    , selectedArea : Area
-    }
-
-
 type Status
     = Selected
     | Blank
-    | SpiceSelected Spice
+    | SpiceSelected Spice.Spice Area
 
 
 type alias Cell =
@@ -175,13 +163,13 @@ removeCells cellList board =
     List.foldl (\cell b -> b |> List.filter ((/=) cell)) board cellList
 
 
-confirmSpice : Spice -> Board -> Board
+confirmSpice : Spice.Spice -> Board -> Board
 confirmSpice spice board =
     board
         |> List.map
             (\cell ->
                 if cell.status == Selected then
-                    { cell | status = SpiceSelected spice }
+                    { cell | status = SpiceSelected spice One }
 
                 else
                     cell
@@ -207,12 +195,12 @@ remove status board =
             board
 
 
-include : Spice -> Board -> Bool
+include : Spice.Spice -> Board -> Bool
 include spice =
     List.foldl
         (\cell b ->
             case cell.status of
-                SpiceSelected s ->
+                SpiceSelected s _ ->
                     if s.id == spice.id then
                         True
 

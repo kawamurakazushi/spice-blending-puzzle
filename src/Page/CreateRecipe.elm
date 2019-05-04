@@ -18,16 +18,14 @@ import View.Recipe as Recipe
 
 type Modal
     = SpiceModal
-    | DeleteModal Board.Spice
+    | DeleteModal Spice.Spice
 
 
 type alias Model =
     { board : Board.Board
-    , spices : List Board.Spice
+    , spices : List Spice.Spice
     , modal : Maybe Modal
-
-    -- TODO: Remove selectedArea from Board.Spice
-    , selectedSpice : Maybe Board.Spice
+    , selectedSpice : Maybe { spice : Spice.Spice, area : Board.Area }
     , comment : String
     , sending : Bool
     , key : Nav.Key
@@ -54,13 +52,13 @@ init key apiKey =
 type Msg
     = FetchedValues (Result Http.Error (List Spice.Spice))
     | CloseModal
-    | SelectSpice Board.Spice
+    | SelectSpice Spice.Spice
     | AddSpice
     | ConfirmSpice
     | ChangeArea Board.Area
     | RefreshBoard
-    | OpenDeleteModal Board.Spice
-    | DeleteSpice Board.Spice
+    | OpenDeleteModal Spice.Spice
+    | DeleteSpice Spice.Spice
     | ShareRecipe
     | SharedRecipe (Result Http.Error String)
     | InputComment String
@@ -70,29 +68,8 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FetchedValues (Ok values) ->
-            let
-                intToBool a =
-                    if a == 1 then
-                        True
-
-                    else
-                        False
-            in
             ( { model
-                | spices =
-                    values
-                        |> List.map
-                            (\v ->
-                                { id = v.id
-                                , name = v.spiceName
-                                , color = v.color
-                                , oneCell = intToBool v.oneSquare
-                                , twoCell = intToBool v.twoSquare
-                                , fourCell = intToBool v.fourSquare
-                                , eightCell = intToBool v.eightSquare
-                                , selectedArea = Board.One
-                                }
-                            )
+                | spices = values
               }
             , Cmd.none
             )
@@ -105,7 +82,7 @@ update msg model =
 
         SelectSpice spice ->
             ( { model
-                | selectedSpice = Just spice
+                | selectedSpice = Just { spice = spice, area = Board.One }
                 , modal = Nothing
                 , board =
                     model.board
@@ -120,7 +97,7 @@ update msg model =
         ConfirmSpice ->
             model.selectedSpice
                 |> Maybe.map
-                    (\spice ->
+                    (\{ spice } ->
                         ( { model
                             | board = model.board |> Board.confirmSpice spice
                             , selectedSpice = Nothing
@@ -135,7 +112,9 @@ update msg model =
                 | board =
                     model.board
                         |> Board.selected area
-                , selectedSpice = model.selectedSpice |> Maybe.map (\s -> { s | selectedArea = area })
+                , selectedSpice =
+                    model.selectedSpice
+                        |> Maybe.map (\s -> { s | area = area })
               }
             , Cmd.none
             )
@@ -148,7 +127,7 @@ update msg model =
 
         DeleteSpice spice ->
             ( { model
-                | board = Board.remove (Board.SpiceSelected spice) model.board
+                | board = Board.remove (Board.SpiceSelected spice Board.One) model.board
                 , modal = Nothing
               }
             , Cmd.none
@@ -174,7 +153,7 @@ update msg model =
                                         cell.row
                                 in
                                 case cell.status of
-                                    Board.SpiceSelected spice ->
+                                    Board.SpiceSelected spice _ ->
                                         Encode.object
                                             [ ( "colStart", Encode.int colStart )
                                             , ( "colEnd", Encode.int colEnd )
@@ -233,7 +212,7 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                         ]
                         [ Html.text "スパイスを選択", Html.i [ joinClasses [ "fa", "fa-caret-down", "ml-2" ] ] [] ]
                     , case selectedSpice of
-                        Just spice ->
+                        Just { spice } ->
                             Html.div [ joinClasses [ "flex-1", "flex", "items-center" ] ]
                                 [ Html.div [ joinClasses [ "flex-1", "text-size-body", "font-bold", "ml-3" ] ] [ Html.text spice.name ]
                                 ]
@@ -285,24 +264,24 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                     [ Html.div [ joinClasses [ "text-size-caption", "text-black55", "mb-2" ] ] [ Html.text "2. パズルの大きさを選んでください" ]
                     , Html.div [ joinClasses [ "flex" ] ] <|
                         case selectedSpice of
-                            Just { name, oneCell, twoCell, fourCell, eightCell, selectedArea } ->
-                                [ if oneCell then
-                                    button [ Events.onClick <| ChangeArea Board.One ] (selectedArea == Board.One) "1個"
+                            Just { spice, area } ->
+                                [ if spice.canOne then
+                                    button [ Events.onClick <| ChangeArea Board.One ] (area == Board.One) "1個"
 
                                   else
                                     disabledButton
-                                , if twoCell then
-                                    button [ Events.onClick <| ChangeArea Board.Two ] (selectedArea == Board.Two) "2個"
+                                , if spice.canTwo then
+                                    button [ Events.onClick <| ChangeArea Board.Two ] (area == Board.Two) "2個"
 
                                   else
                                     disabledButton
-                                , if fourCell then
-                                    button [ Events.onClick <| ChangeArea Board.Four ] (selectedArea == Board.Four) "4個"
+                                , if spice.canFour then
+                                    button [ Events.onClick <| ChangeArea Board.Four ] (area == Board.Four) "4個"
 
                                   else
                                     disabledButton
-                                , if eightCell then
-                                    button [ Events.onClick <| ChangeArea Board.Eight ] (selectedArea == Board.Eight) "8個"
+                                , if spice.canEight then
+                                    button [ Events.onClick <| ChangeArea Board.Eight ] (area == Board.Eight) "8個"
 
                                   else
                                     disabledButton
@@ -329,7 +308,7 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                                                 Board.Selected ->
                                                     [ "z-10", "shadow-b" ]
 
-                                                Board.SpiceSelected _ ->
+                                                Board.SpiceSelected _ _ ->
                                                     [ "" ]
 
                                                 Board.Blank ->
@@ -342,7 +321,7 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                                                 , Events.onClick <| ConfirmSpice
                                                 ]
 
-                                            Board.SpiceSelected spice ->
+                                            Board.SpiceSelected spice _ ->
                                                 [ Attributes.style "background-color" (spice.color ++ "70"), Events.onClick <| OpenDeleteModal spice ]
 
                                             _ ->
@@ -353,7 +332,7 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                                     Board.Selected ->
                                         [ Html.div [ joinClasses [ "rounded-full", "p-3", "shadow-a" ], Attributes.style "background-color" "oldlace" ] [ Html.text "決定" ] ]
 
-                                    Board.SpiceSelected spice ->
+                                    Board.SpiceSelected spice _ ->
                                         [ Html.text spice.name ]
 
                                     _ ->
@@ -511,10 +490,10 @@ view { selectedSpice, board, modal, spices, comment, sending } =
                                                                    )
                                                         ]
                                                         [ Html.text s.name ]
-                                                    , checkView s.oneCell
-                                                    , checkView s.twoCell
-                                                    , checkView s.fourCell
-                                                    , checkView s.eightCell
+                                                    , checkView s.canOne
+                                                    , checkView s.canTwo
+                                                    , checkView s.canFour
+                                                    , checkView s.canEight
                                                     ]
                                             )
                                    )

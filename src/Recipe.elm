@@ -1,6 +1,8 @@
 module Recipe exposing (Recipe, decoder)
 
+import Board
 import Json.Decode as Decode
+import Spice
 
 
 type alias Recipe =
@@ -8,6 +10,17 @@ type alias Recipe =
     , comment : String
     , created : String
     , puzzle : String
+    }
+
+
+type alias RecipeWithBoard =
+    { board : Board.Board
+    }
+
+
+withBoard : Recipe -> List Spice.Spice -> RecipeWithBoard
+withBoard recipe spice =
+    { board = Board.initialBoard
     }
 
 

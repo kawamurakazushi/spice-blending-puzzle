@@ -15,7 +15,7 @@ view board =
                 |> List.map
                     (\cell ->
                         case cell.status of
-                            Board.SpiceSelected spice ->
+                            Board.SpiceSelected spice area ->
                                 [ Html.div [ Attributes.class "my-1 text-size-small" ] [ Html.text spice.name ]
                                 , Html.div [ Attributes.class "my-1 text-size-small" ] [ Html.text <| "小さじ " ++ (cell |> Board.cells |> List.length |> toFloat |> (*) 0.5 |> String.fromFloat) ]
                                 ]
