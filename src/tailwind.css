@@ -6,7 +6,6 @@
 body {
   @apply text-black90 font-regular;
   width: 100vw;
-  overflow: hidden;
 }
 
 * {
