@@ -2,7 +2,7 @@ import { Elm } from "./Main";
 
 const app = Elm.Main.init({
   node: document.querySelector("main"),
-  flags: process.env.API_KEY
+  flags: ""
 });
 
 app.ports.scrollToTop.subscribe(function() {

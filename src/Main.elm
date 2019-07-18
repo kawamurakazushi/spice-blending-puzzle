@@ -53,9 +53,12 @@ urlToPage key apiKey url =
                 |> Tuple.mapSecond (Cmd.map CreateRecipeMsg)
 
 
-init : String -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init apiKey url key =
+init : a -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init _ url key =
     let
+        apiKey =
+            "AIzaSyAF76ebBsSdMWFFbL4jU6w3qbETWWjYzTo"
+
         ( page, cmd ) =
             urlToPage key apiKey url
     in
