@@ -304,12 +304,7 @@ view { selectedSpice, board, modal, spices, comment, sending, error } =
                 ]
     in
     Html.div []
-        [ Html.div [ Attributes.class "flex mb-4" ]
-            [ Html.a [ Attributes.href "/recipes", Attributes.class "text-size-caption text-black50" ] [ Html.text "スパイスパズル一覧" ]
-            , Html.div [ Attributes.class "text-size-caption text-black50 mx-2" ] [ Html.text "/" ]
-            , Html.div [ Attributes.class "text-size-caption text-black50 font-bold" ] [ Html.text "作成" ]
-            ]
-        , if Board.completed board then
+        [ if Board.completed board then
             Html.div []
                 [ Html.div [ joinClasses [ "border-b", "border-black10", "mb-2" ] ]
                     [ Html.div [ joinClasses [ "my-2", "text-size-small", "font-bold" ] ] [ Html.span [ Attributes.class "text-error mr-1" ] [ Html.text "*" ], Html.text "コメント (必須)" ] ]
